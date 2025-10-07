@@ -15,5 +15,6 @@ Entrainement plus poussé en évolutif + renforcement learning : https://www.you
 
 
 ID; TYPE; VIE; DIRECTION; DEPLACEMENT; COOR_DEBUT; COOR_FIN;
+
 ID; TYPE; VIE; DIRECTION; ATTACK; ID_ENEMY;
 

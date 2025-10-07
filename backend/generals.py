@@ -28,7 +28,19 @@ class MajorDaft(General):
             enemies = enemy_army.living_units()
             if enemies:
                 target = min(enemies, key=lambda e: self.distance(unit, e))
-                print(f"{unit.unit_type()} moves toward {target.unit_type()}")
+                self.move_toward(unit, target, game_map)
+
+    def move_toward(self, unit, target, game_map):
+        ux, uy = unit.position
+        tx, ty = target.position
+
+        # move 1 step closer toward the target
+        new_x = ux + (1 if tx > ux else -1 if tx < ux else 0)
+        new_y = uy + (1 if ty > uy else -1 if ty < uy else 0)
+
+        # move unit on map
+        if game_map.grid[new_x][new_y].is_empty():
+            game_map.move_unit(unit, new_x, new_y)
 
     def distance(self, u1, u2):
         x1, y1 = u1.position

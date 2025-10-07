@@ -1,7 +1,7 @@
 # frontend/terminal_view.py
 from backend.map import Map
 
-def print_map(game_map: Map):
+def print_map(game_map: Map):   # Simple terminal-based map visualization
     for y in range(game_map.height):
         row = ""
         for x in range(game_map.width):

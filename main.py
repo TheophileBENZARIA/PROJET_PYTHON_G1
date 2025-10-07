@@ -7,12 +7,12 @@ from backend.battle import Battle
 from frontend.terminal_view import print_map
 
 def main():
-    parser = argparse.ArgumentParser(description="MedievAIl Battle Simulator")
-    parser.add_argument("mode", choices=["battle"], help="Run a battle")
+    parser = argparse.ArgumentParser(description="MedievAIl Battle Simulator")  # Program description
+    parser.add_argument("mode", choices=["battle"], help="Run a battle") # Only 'battle' mode implemented for now
     args = parser.parse_args()
 
     if args.mode == "battle":
-        game_map, army1, army2 = simple_knight_duel()
+        game_map, army1, army2 = simple_knight_duel()   # Simple scenario with 1 Knight vs 1 Knight
         general1 = CaptainBraindead()
         general2 = MajorDaft()
 

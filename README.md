@@ -24,7 +24,7 @@ ID; TYPE; VIE; DIRECTION; ATTACK; ID_ENEMY;
 
 #  MAP 
 
-1000x1000; [L,R,U,D] <- Left Right Up Down, c'est pour saoir sur quel arrête on doit faire la duplication
+1000x1000; [L,R,U,D] <- Left Right Up Down, c'est pour savoir sur quelle arrête on doit faire la sumétrie mirroir
 ```
       B
 KKKK  B

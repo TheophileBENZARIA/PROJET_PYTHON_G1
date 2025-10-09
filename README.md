@@ -25,11 +25,11 @@ ID; TYPE; VIE; DIRECTION; ATTACK; ID_ENEMY;
 #  MAP 
 
 1000x1000; [L,R,U,D] <- Left Right Up Down, c'est pour saoir sur quel arrête on doit faire la duplication
-'''
+```
       B
 KKKK  B
 kkkk  B
 kkkk  B 
       B      
       B
-'''
+```

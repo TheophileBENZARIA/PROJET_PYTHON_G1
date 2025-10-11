@@ -13,20 +13,20 @@ class Unit(ABC):
         self.position = None
         self.cooldown = 0
 
-    def is_alive(self):
+    def is_alive(self): #indicates if unit is alive
         return self.hp > 0
 
-    def take_damage(self, dmg):
+    def take_damage(self, dmg): #calculates damage taken after armor reduction
         self.hp -= max(1, dmg - self.armor)
 
-    def can_attack(self):
+    def can_attack(self): #indicates if unit can attack based on cooldown
         return self.cooldown <= 0
 
-    def reset_cooldown(self):
+    def reset_cooldown(self): #resets cooldown after attack
         self.cooldown = self.reload_time
 
     @abstractmethod
-    def unit_type(self):
+    def unit_type(self): #abstract method to be implemented by subclasses
         pass
 
 

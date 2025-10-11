@@ -27,7 +27,7 @@ class MajorDaft(General):
         for unit in army.living_units():
             enemies = enemy_army.living_units()
             if enemies:
-                target = min(enemies, key=lambda e: self.distance(unit, e))
+                target = min(enemies, key=lambda e: self.distance(unit, e)) # closest enemy #make it more clear
                 self.move_toward(unit, target, game_map)
 
     def move_toward(self, unit, target, game_map):

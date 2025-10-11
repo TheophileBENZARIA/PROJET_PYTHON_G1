@@ -8,7 +8,7 @@ class Tile:
         self.unit = None   # a unit currently standing here
         self.building = None
 
-    def is_empty(self):
+    def is_empty(self): # check if tile is empty
         return self.unit is None and self.building is None
 
 
@@ -19,7 +19,7 @@ class Map:
         self.height = height
         self.grid = [[Tile(x, y) for y in range(height)] for x in range(width)]
 
-    def place_unit(self, unit, x, y):
+    def place_unit(self, unit, x, y): # place a unit on the map
         tile = self.grid[x][y]
         if tile.is_empty():
             tile.unit = unit
@@ -27,7 +27,7 @@ class Map:
         else:
             raise ValueError("Tile occupied!")
 
-    def move_unit(self, unit, new_x, new_y):
+    def move_unit(self, unit, new_x, new_y): # move a unit to a new position
         old_x, old_y = unit.position
         self.grid[old_x][old_y].unit = None
         self.grid[new_x][new_y].unit = unit

@@ -23,9 +23,9 @@ ID; TYPE; VIE; DIRECTION; DEPLACEMENT; COOR_DEBUT; COOR_FIN;
 ID; TYPE; VIE; DIRECTION; ATTACK; ID_ENEMY;
 
 #  MAP 
-
-1000x1000; [L,R,U,D] <- Left Right Up Down, c'est pour savoir sur quelle arrête on doit faire la sumétrie mirroir
 ```
+1000x1000; [V,H] <- Vertical, Horizontal, c'est pour savoir sur quelle arrête on doit faire la symétrie mirroir
+
       B
 KKKK  B
 kkkk  B

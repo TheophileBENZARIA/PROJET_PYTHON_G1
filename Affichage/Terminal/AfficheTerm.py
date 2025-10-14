@@ -2,6 +2,15 @@ import argparse
 import curses
 
 """
+In : [liste1 : list, liste2 :list]
+Out : [result : list]
+Prend les 2 listes, assigne une equipe a chaque et retourne la concaténation
+"""
+def armyMirror(liste1 : list, liste2 :list) -> list :
+    pass
+
+
+"""
 In : [f: file] <- fichier ouvert en lecture
 Out : [grille: list] <- tableau 2D
 A partir du fichier map elle genère la grille d'affichage et en duplicant en mirroir les troupes
@@ -54,7 +63,6 @@ def main(stdscr):
     # ! Tester si la map est bien la meme que celle noter dans la save
 
     grille = [[]]
-
     with open(args.map, "r") as f:
         grille = genererGrille(f)
 

@@ -48,17 +48,13 @@ def genererGrille(f) -> list:
 
 
 
-def main(stdscr):
+def main(stdscr, args):
     curses.curs_set(0)  # hide cursor
     stdscr.nodelay(True)  # non-blocking getch
     stdscr.keypad(True)  # enable special keys capture
     max_hauteur, max_longeur = stdscr.getmaxyx()
 
-    # recuperation de l'argument map
-    parser = argparse.ArgumentParser(description="Argument pour lancer l'affichage")
-    parser.add_argument("--save", type=str, required=True, help="Fichier de sauvegarde à charger")
-    parser.add_argument("--map", type=str, required=True, help="Fichier de carte à charger lié à la sauvegarde")
-    args = parser.parse_args()
+    print("fezf")
 
     # ! Tester si la map est bien la meme que celle noter dans la save
 
@@ -115,4 +111,12 @@ def main(stdscr):
 
 
 if __name__ == "__main__":
-    curses.wrapper(main)
+    # recuperation de l'argument map
+    parser = argparse.ArgumentParser(description="Argument pour lancer l'affichage")
+    parser.add_argument("--save", type=str, required=True, help="Fichier de sauvegarde à charger")
+    parser.add_argument("--map", type=str, required=True, help="Fichier de carte à charger lié à la sauvegarde")
+    args = parser.parse_args()
+
+    curses.wrapper(main, args)
+    print("okt")
+

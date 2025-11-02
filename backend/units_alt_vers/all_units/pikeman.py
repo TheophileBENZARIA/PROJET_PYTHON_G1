@@ -1,4 +1,4 @@
-from .unit import BaseUnit
+from .unit import BaseUnit2
 
 class Pikeman(BaseUnit):
     def __init__(self):

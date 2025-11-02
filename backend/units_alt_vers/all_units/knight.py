@@ -15,5 +15,5 @@ class Knight(BaseUnit):
             bonuses={}
         )
 
-def __str__(self):
+    def __str__(self):
         return f"{self.name} (HP={self.hp}/{self.max_hp})"

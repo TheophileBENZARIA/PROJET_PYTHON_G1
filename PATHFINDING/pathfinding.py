@@ -1,7 +1,9 @@
 # L'algo le plus efficient: A star
 # Trois étapes: 1/Grid 2/Astar 3/Test
 # Cmd+Shift+P puis new Terminal
-
+from heapq import heappush, heappop
+import math
+import random
 
 class Grid: #ca c'est mon constructeur et dedans j'ai des methodes
     def __init__(self, width, height, walls=None, allow_diagonal=False, cost_deplacement=None):

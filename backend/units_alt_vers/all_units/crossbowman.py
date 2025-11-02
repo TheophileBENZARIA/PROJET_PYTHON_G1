@@ -18,3 +18,5 @@ class Crossbowman(BaseUnit):
             }
         )
 
+    def __str__(self):
+        return f"{self.name} (HP={self.hp}/{self.max_hp})"

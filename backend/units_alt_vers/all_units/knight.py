@@ -12,5 +12,8 @@ class Knight(BaseUnit):
             speed=1.5,
             reload_time=1.8,
             classes=["Cavalry"]
+            bonuses={}
         )
 
+def __str__(self):
+        return f"{self.name} (HP={self.hp}/{self.max_hp})"

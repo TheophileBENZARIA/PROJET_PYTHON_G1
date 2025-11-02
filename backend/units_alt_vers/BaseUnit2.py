@@ -36,22 +36,6 @@ class BaseUnit:
             dmg = max(1, dmg - self.pierce_armor)
         self.hp -= dmg
 
-    def move_towards(self, target):
-        """Simple greedy movement toward target (no pathfinding yet)."""
-        if not target or not target.is_alive():
-            return
-        x, y = self.position
-        tx, ty = target.position
-        if x < tx:
-            x += 1
-        elif x > tx:
-            x -= 1
-        if y < ty:
-            y += 1
-        elif y > ty:
-            y -= 1
-        self.position = (x, y)
-
     def can_attack(self, target):
         """Check if within attack range."""
         return self.distance_to(target) <= self.range

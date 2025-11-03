@@ -106,9 +106,9 @@ ID; TYPE; VIE; DIRECTION; ATTACK; ID_ENEMY;
 
 #  MAP 
 ```
-1000,1000,[V,H] <- Vertical, Horizontal, c'est pour savoir sur quelle arrête on doit faire la symétrie mirroir
+1000,1000,[H,B,G,D] <- Haut, Bas, Gauche, Droite, c'est pour savoir sur quelle arrête on doit faire la symétrie mirroir
 
-      B
+......B
 KKKK  B
 kkkk  B
 kkkk  B 

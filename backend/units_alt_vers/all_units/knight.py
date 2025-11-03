@@ -11,7 +11,7 @@ class Knight(BaseUnit):
             attack_range=0,
             speed=1.5,
             reload_time=1.8,
-            classes=["Cavalry"]
+            classes=["Cavalry"],
             bonuses={}
         )
 

@@ -12,7 +12,6 @@ class BaseUnit:
         self.range = attack_range
         self.speed = speed
         self.reload_time = reload_time
-        self.cooldown = 0.0
         self.position = (0, 0)        # now 2D (x, y)
         self.classes = classes if classes else []
         self.bonuses = bonuses if bonuses else {}

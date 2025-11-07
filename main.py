@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 """
 main.py - Point d'entrée principal du MedievAIl Battle Simulator
 ================================================================
@@ -142,17 +142,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nErreur lors de la simulation : {e}")
         print(f"Vérifiez que tous les fichiers sont présents et correctement configurés")
-=======
 
-
-
-def multiply(a : int, b: int) -> int :
-    return a * b
-
-
-if __name__ == '__main__':
-    print(multiply(2, 3))
-    print(multiply(2.4, 3))
-    print(multiply(2, 3))
-    print('Hello World')
 >>>>>>> bf8039070c83bddead605fdbd0b796e19b26ff3d

@@ -14,6 +14,19 @@ class General(ABC):
         # save class name so we can reconstruct
         return {"class": type(self).__name__}
 
+    @classmethod
+    def from_dict(cls, data: dict):
+        """
+        Restore a General from a dict produced by `to_dict`.
+        Expects a dict with a `"class"` key containing the class name saved by `to_dict`.
+        Falls back to returning a default general if the name is unknown.
+        """
+        if not isinstance(data, dict):
+            raise TypeError("General.from_dict expects a dict")
+        name = data.get("class") or data.get("name")
+        # use the module-level registry/resolver to construct the correct subclass instance
+        return general_from_name(name)
+
 
 class CaptainBraindead(General):
     def __init__(self):

@@ -1,4 +1,5 @@
 # main.py
+import logging
 import argparse
 from typing import Optional
 from backend.scenarios import simple_knight_duel
@@ -17,6 +18,7 @@ def run_battle(battle: Optional[Battle] = None, max_ticks: Optional[int] = None,
     """
     Run a new battle if `battle` is None, otherwise continue running the provided Battle.
     If max_ticks is None the battle runs until one or both armies are eliminated.
+    Returns the Battle object (mutated) so callers can save/inspect it.
     """
     if battle is None:
         game_map, army1, army2 = simple_knight_duel()
@@ -27,8 +29,18 @@ def run_battle(battle: Optional[Battle] = None, max_ticks: Optional[int] = None,
     print("Initial map:")
     print_map(battle.map)
 
-    result = battle.run(max_ticks=max_ticks, delay=delay)
-    print(result)
+    battle.debug_print_tick()
+
+    result = battle.run(delay=delay)
+
+    # Print a human-readable summary from the structured result
+    print("\n--- Battle summary ---")
+    print(f"Winner: {result.winner}")
+    print(f"Ticks simulated: {result.ticks}")
+    for owner, units in result.surviving_units.items():
+        print(f"{owner} surviving units: {len(units)}")
+    print("----------------------\n")
+
     return battle
 
 
@@ -52,6 +64,9 @@ def load_any_battle(filename: str) -> Battle:
 
 
 def main():
+    logging.basicConfig(level=logging.DEBUG,
+                        format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+
     parser = argparse.ArgumentParser(description="MedievAIl Battle Simulator")
     subparsers = parser.add_subparsers(dest="mode")
 
@@ -85,6 +100,7 @@ def main():
 
     if args.mode == "run":
         battle = run_battle(max_ticks=args.ticks, delay=args.delay)
+        battle.debug_print_tick()
         choice = input("Do you want to save this battle? (y/n): ")
         if choice.lower().startswith("y"):
             choose_save_method_and_save(battle)
@@ -98,6 +114,7 @@ def main():
 
         print("Map from loaded battle:")
         print_map(battle.map)
+        battle.debug_print_tick()
         print(f"Tick: {battle.tick}")
 
         if args.do_continue:

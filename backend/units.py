@@ -29,6 +29,17 @@ class Unit(ABC):
     def reset_cooldown(self):
         self.cooldown = self.reload_time
 
+    def attack_unit(self, target):
+        """Deal damage to target and reset cooldown."""
+        if not target.is_alive():
+            return
+        dmg = max(1, self.attack - target.armor)
+        target.hp -= dmg
+        if target.hp <= 0:
+            target.hp = 0
+        self.cooldown = self.reload_time
+        return dmg
+
     @abstractmethod
     def unit_type(self) -> str:
         pass

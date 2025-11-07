@@ -1,7 +1,7 @@
-from entity.units.MeleeUnits import *
+from entity.units.MeleeUnits.melees import *
 from models.entity import units
 
-class Pikeman(units):
+class Pikeman(melees):
     def __init__(self):
         super().__init__(
             name="Pikeman",

@@ -14,7 +14,7 @@ def simple_knight_duel():
     k2 = Knight("Player2")
 
     game_map.place_unit(k1, 5, 5)
-    game_map.place_unit(k2, 15, 15)
+    game_map.place_unit(k2, 5, 15)
 
     army1.add_unit(k1)
     army2.add_unit(k2)

@@ -9,7 +9,7 @@ from frontend.terminal_view import print_map
 import logging
 
 logger = logging.getLogger(__name__)
-MAX_TICKS = 20
+MAX_TICKS = 100
 
 @dataclass
 class BattleResult:

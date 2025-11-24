@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 
 class Unit(ABC):
     def __init__(self, owner: str, hp: int, attack: int, armor: int,
-                 speed: int, range_: int, reload_time: int, id: Optional[str] = None):
+                 speed: int, range_: int, reload_time: int,classes=None, bonuses=None, id: Optional[str] = None):
         self.id = id or str(uuid.uuid4())
         self.owner = owner
         self.hp = hp
@@ -15,6 +15,8 @@ class Unit(ABC):
         self.range = range_
         self.reload_time = reload_time
         self.position = None  # (x, y) or None
+        self.classes = classes if classes else []
+        self.bonuses = bonuses if bonuses else {}
         self.cooldown = 0
 
     def is_alive(self) -> bool:
@@ -84,8 +86,7 @@ class Unit(ABC):
 
 class Knight(Unit):
     def __init__(self, owner: str, id: Optional[str] = None):
-        super().__init__(owner, hp=100, attack=10, armor=2,
-                         speed=2, range_=1, reload_time=2, id=id)
+        super().__init__(owner, hp=100, attack=10, armor=2,speed=2, range_=1, reload_time=2,classes=["Cavalry"],bonuses={"Infantry": 2}, id=id)
 
     def unit_type(self) -> str:
         return "Knight"
@@ -94,7 +95,8 @@ class Knight(Unit):
 class Pikeman(Unit):
     def __init__(self, owner: str, id: Optional[str] = None):
         super().__init__(owner, hp=55, attack=4, armor=0,
-                         speed=1, range_=1, reload_time=3, id=id)
+                         speed=1, range_=1, reload_time=3,classes=["Infantry", "Spear"],
+            bonuses={"Cavalry": 10}, id=id)
 
     def unit_type(self) -> str:
         return "Pikeman"
@@ -103,7 +105,8 @@ class Pikeman(Unit):
 class Crossbowman(Unit):
     def __init__(self, owner: str, id: Optional[str] = None):
         super().__init__(owner, hp=35, attack=6, armor=0,
-                         speed=1, range_=5, reload_time=3, id=id)
+                         speed=1, range_=5, reload_time=3,classes=["Archer"],
+            bonuses={"Spear": 3, "Building": 0}, id=id)
 
     def unit_type(self) -> str:
         return "Crossbowman"

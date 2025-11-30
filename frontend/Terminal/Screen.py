@@ -1,4 +1,7 @@
 import curses
+from socket import send_fds
+from time import sleep
+
 
 class Screen :
     def __init__(self, stdsrc :curses.window):
@@ -12,7 +15,8 @@ class Screen :
         self.std.keypad(True)
 
     def getch(self):
-        self.std.getch()
+        key =self.std.getch()
+        self.std.addstr(0,0, f"{key}")
 
 
     def afficher_grille(self, grille):

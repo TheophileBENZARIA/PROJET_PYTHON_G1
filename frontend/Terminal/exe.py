@@ -14,7 +14,7 @@ def start(stdsrc) :
 
     while True:
         screen.afficher_grille(grille)
-        stdsrc.getch()
+        screen.getch()
 
 
 if __name__ == '__main__':

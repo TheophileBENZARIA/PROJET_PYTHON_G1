@@ -1,3 +1,4 @@
+# backend/generals.py
 from abc import ABC, abstractmethod
 from typing import Dict
 
@@ -50,10 +51,36 @@ class MajorDaft(General):
     def move_toward(self, unit, target, game_map):
         ux, uy = unit.position
         tx, ty = target.position
+
+        # If unit is ranged (range > 1) prefer to keep distance so the unit can shoot.
+        # We only step away when strictly closer than desired (dist < unit.range).
+        if getattr(unit, "range", 1) > 1:
+            dist = self.distance(unit, target)
+
+            # If the unit is strictly too close, step away one tile.
+            if dist < unit.range:
+                dx = 1 if ux > tx else (-1 if ux < tx else 0)
+                dy = 1 if uy > ty else (-1 if uy < ty else 0)
+                new_x = ux + dx
+                new_y = uy + dy
+                # bounds and occupancy checks
+                if 0 <= new_x < game_map.width and 0 <= new_y < game_map.height:
+                    if game_map.grid[new_x][new_y].is_empty():
+                        game_map.move_unit(unit, new_x, new_y)
+                return  # after stepping away, don't move closer
+
+            # If distance equals range, hold position so the unit can shoot consistently.
+            if dist == unit.range:
+                return  # hold position (don't move closer or farther)
+
+            # otherwise (dist > unit.range) fall through to move closer
+
+        # Default: move one step toward the target (existing behavior)
         new_x = ux + (1 if tx > ux else -1 if tx < ux else 0)
         new_y = uy + (1 if ty > uy else -1 if ty < uy else 0)
-        if game_map.grid[new_x][new_y].is_empty():
-            game_map.move_unit(unit, new_x, new_y)
+        if 0 <= new_x < game_map.width and 0 <= new_y < game_map.height:
+            if game_map.grid[new_x][new_y].is_empty():
+                game_map.move_unit(unit, new_x, new_y)
 
     def distance(self, u1, u2):
         x1, y1 = u1.position

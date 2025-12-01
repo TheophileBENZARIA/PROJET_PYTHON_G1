@@ -51,26 +51,29 @@ class Screen :
         else :
             y_n=3
 
-        if abs(maxx - len(grille)) < self.x :
-            self.x = abs(maxx - len(grille))
-        min_x = self.x
-        max_x = maxx + self.x
+
         if len(grille) == 0 :
             x_n = 1
             min_x = 0
             max_x = 0
-        elif maxx > len(grille[0]):
-            x_n = 1
-            min_x = 0
-            max_x = len(grille[0])
-        elif maxx == len(grille[0]) - self.x:
+        else :
+            if abs(maxx - len(grille[0])) < self.x :
+                self.x = abs(maxx - len(grille[0]))
             min_x = self.x
             max_x = maxx + self.x
-            x_n = 2
-        elif self.x == 0 :
-            x_n = 4
-        else:
-            x_n = 3
+
+            if maxx > len(grille[0]):
+                x_n = 1
+                min_x = 0
+                max_x = len(grille[0])
+            elif maxx == len(grille[0]) - self.x:
+                min_x = self.x
+                max_x = maxx + self.x
+                x_n = 2
+            elif self.x == 0 :
+                x_n = 4
+            else:
+                x_n = 3
 
         for y in range(min_y, max_y):
             c= "|"
@@ -94,4 +97,4 @@ class Screen :
             c= "|"
             if x_n == 4 or x_n == 3 :
                 c="."
-            self.std.addstr(1+y-min_y,max_x+1,c)
+            self.std.addstr(1+y-min_y,1 + max_x - min_x,c)

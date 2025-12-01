@@ -1,237 +1,252 @@
-import math 
-import time #permet de ralentir l'animation
-import os #nettoie la carte
+# File: `pathfinding_standalone.py`
+# python
+import math
+from typing import List, Optional, Tuple
 
 # --- CLASSES DE BASE (Vector et Unit) ---
 
-class Vector: #definit une classe pour représenter un vecteur 2D (position ou deplacement)
-    def __init__(self, x, y): #initialisation des coordonées
+class Vector: 
+    """Représente un vecteur 2D (position ou déplacement)."""
+    def __init__(self, x: float, y: float):
         self.x = x
         self.y = y
 
-    def __sub__(self, other): #soustraction entre deux vecteurs : retourne un vecteur qui avec la diff des coordonées
+    def __sub__(self, other: 'Vector') -> 'Vector':
+        """Soustraction de vecteurs."""
         return Vector(self.x - other.x, self.y - other.y)
 
-    def __add__(self, other): #addition entre 2 vecteurs
-        return Vector(self.x + other.x, self.y + other.y)#retourne un vecteur
+    def __add__(self, other: 'Vector') -> 'Vector':
+        """Addition de vecteurs."""
+        return Vector(self.x + other.x, self.y + other.y)
 
-    def magnitude(self): #magnitude (longueur) du veteur, utilise pythagore
+    def magnitude(self) -> float:
+        """Magnitude (longueur) du vecteur."""
         return math.sqrt(self.x**2 + self.y**2)
 
-    def normalize(self): #normalise le vecteur (le rend unitaire)
-    #divise chaque coordonee par la magnitude
+    def normalize(self) -> 'Vector':
+        """Normalise le vecteur (le rend unitaire)."""
         mag = self.magnitude()
-        if mag == 0:  #si magnitude = 0 vecteur retourné est 0,0
-            return Vector(0, 0)
-        return Vector(self.x / mag, self.y / mag) 
+        if mag == 0:
+            return Vector(0.0, 0.0)
+        return Vector(self.x / mag, self.y / mag)
 
-    def scale(self, scalar): #permet de multiplier le vecteur par un scalaire (étire ou condense)
+    def scale(self, scalar: float) -> 'Vector':
+        """Multiplie le vecteur par un scalaire."""
         return Vector(self.x * scalar, self.y * scalar)
+    
+    def __repr__(self) -> str:
+        return f"V({self.x:.2f}, {self.y:.2f})"
 
-class Unit: #rpz une unité dans la simulation
-    def __init__(self, name, x, y, radius, speed, is_static=False):
+
+class Unit: 
+    """Représente une unité dans la simulation de mouvement continu."""
+    
+    # Pour simuler les unités de votre jeu, j'utilise un tuple de (x, y) pour la position
+    # mais le Vector sera utilisé en interne pour le mouvement flottant.
+    
+    def __init__(self, name: str, x: float, y: float, radius: float, speed: float, is_static: bool = False):
         self.name = name
-        self.position = Vector(x, y)
-        self.target = None
-        self.target_name = None # NOUVEAU : Nom de la cible
-        self.radius = radius #rayon d'influence de l'unité
-        self.speed = speed #vitesse de déplacement
-        self.is_evading = False #boolean si unité est entrain d'éviter un obstacle
-        self.is_static = is_static #indique si l'unité ne se déplace pas
-        self.last_move = Vector(0, 0) 
-        
-    def set_target(self, x, y, name=None): # definition de la cible de l'unité et son nom
+        # Stocke la position en Vector (flottant) pour le pathfinding
+        self._position_vector = Vector(x, y)
+        self.target: Optional[Vector] = None
+        self.target_name: Optional[str] = None
+        self.radius = radius        # Rayon d'influence (pour l'évitement)
+        self.speed = speed          # Vitesse de déplacement (distance max par tick)
+        self.is_evading = False
+        self.is_static = is_static
+        self.last_move = Vector(0.0, 0.0)
+
+    @property
+    def position(self) -> Tuple[float, float]:
+        """Retourne la position comme un tuple (x, y) de flottants."""
+        return (self._position_vector.x, self._position_vector.y)
+
+    @position.setter
+    def position(self, new_pos: Tuple[float, float]):
+        """Définit la position à partir d'un tuple (x, y) de flottants."""
+        self._position_vector.x = new_pos[0]
+        self._position_vector.y = new_pos[1]
+
+    def set_target(self, x: float, y: float, name: Optional[str] = None):
+        """Définit la cible de l'unité."""
         if not self.is_static:
             self.target = Vector(x, y)
-            self.target_name = name if name else 'T' # Utilise 'T' par défaut
+            self.target_name = name if name else 'T'
             self.is_evading = False
 
-    def update(self, obstacles): #appelé à chaque étape de la simulation. Si l'uunité est static, elle ne bouge pas.
-        if self.is_static:
-            self.last_move = Vector(0, 0) # Les murs ne bougent pas
-            return #permet de définir les unité statique
+    def _check_for_obstacles(self, obstacles: List['Unit']) -> Vector:
+        """Calcule la force d'évitement à partir des autres unités."""
+        evasion_force = Vector(0.0, 0.0)
+        # 6 fois le rayon pour définir la zone de réaction à l'évitement
+        proximity_threshold = self.radius * 6 
 
-        # Stocker la position avant le mouvement
-        old_position = self.position #on garde la position actuelle avant le mvt pour pouvoir calculer le déplacement
-        
-        if not self.target: #si l'unité n'a pas de cible, elle ne se déplace pas
-            self.last_move = Vector(0, 0)
-            return
-
-        direction_to_target = (self.target - self.position).normalize() #on calcule la direction vers la cible (vecteur normalisé), 
-        movement_vector = direction_to_target.scale(self.speed)#puis on multiplie ce vecteur âr la vitesse pour obtenir le vecteur de déplacement
-
-        evasion_vector = self._check_for_obstacles(obstacles) #verification de si les obstacles proches
-
-        # Si obstacles proches -> application de l'évitement
-        if evasion_vector.magnitude() > 0: #si vecteur d'evitement existe -> magnitude >0
-            # Combinaison : 0.5 vers la cible, 1.5 pour l'évitement (favorise l'évitement)
-            combined_vector = movement_vector.scale(0.5) + evasion_vector.scale(1.5) 
-            self.is_evading = True
-        else: #si pas d'obstacle : 
-            combined_vector = movement_vector #simple mvt vers la cible
-            # Reprise de la trajectoire
-            if self.is_evading: #si l'unité est en evitement, on véirife si la distance restante à la cible est sufisante
-            # (>speed*2) pour decider de remettre is_evading à False
-                if (self.target - self.position).magnitude() > self.speed * 2:
-                    self.is_evading = False
-
-        # 3. Mouvement
-        target_distance = (self.target - self.position).magnitude() #calcul la distance restante à la coble
-        
-        if target_distance > self.speed: #Si la distance > speed : on se déplace d’une longueur speed dans la direction de combined_vector (on normalise pour préserver la longueur).
-            final_move = combined_vector.normalize().scale(self.speed)
-            self.position = self.position + final_move
-        else: #Sinon (on est proche) : on se déplace exactement jusqu’à la cible (évite de « dépasser »), position = target, et on efface target et target_name.
-            final_move = self.target - self.position # Déplacement exact jusqu'à la cible
-            self.position = self.target
-            self.target = None
-            self.target_name = None # Réinitialiser le nom de la cible
-            
-        #Calcule le vecteur du déplacement réellement effectué cette étape, utile pour l’affichage/debug
-        self.last_move = self.position - old_position
-            
-    def _check_for_obstacles(self, obstacles):
-        evasion_force = Vector(0, 0) #Initialise le vecteur d’évitement à zéro.
-        proximity_threshold = self.radius * 6 #définit jusqu’à quelle distance on commence à appliquer une force d’évitement (ici 6 fois le rayon).
-
-        for obstacle in obstacles: #Parcourt chaque obstacle (en réalité on passe toutes les unités, 
-            #d’où le test is self pour ignorer soi-même).
-            if obstacle is self: 
+        for obstacle in obstacles:
+            if obstacle is self:
                 continue
 
-            distance = (obstacle.position - self.position).magnitude() #Calcule la distance à l’obstacle.
+            distance = (obstacle._position_vector - self._position_vector).magnitude()
             
-            if distance < proximity_threshold: #Si cette distance est inférieure au seuil
-                away_from_obstacle = (self.position - obstacle.position).normalize() #away_from_obstacle : vecteur unitaire pointant loin de l’obstacle.
-                strength = 1 - distance / proximity_threshold #strength : facteur entre 0 et 1 qui augmente lorsque l’obstacle est plus proche (linéaire).
-                evasion_force = evasion_force + away_from_obstacle.scale(strength) #On accumule dans evasion_force la contribution pondérée par strength. Ainsi plusieurs obstacles s’additionnent.
+            if distance < proximity_threshold and distance > 0:
+                away_from_obstacle = (self._position_vector - obstacle._position_vector).normalize()
+                # Facteur qui augmente plus l'obstacle est proche (1 à 0)
+                strength = 1.0 - distance / proximity_threshold 
+                evasion_force = evasion_force + away_from_obstacle.scale(strength)
 
-        return evasion_force #retourne le vecteur d'evitement total (zéro si aucun obstacle)
+        return evasion_force
 
-    def __str__(self): #Si l’unité est statique, __str__ renvoie une ligne descriptive indiquant que c’est un mur statique
+    def update(self, obstacles: List['Unit']):
+        """
+        Calcule et applique le mouvement pour un 'tick' de simulation.
+        Nécessite la liste de toutes les unités (y compris elle-même) comme obstacles.
+        """
         if self.is_static:
-            return f"[{self.name}] ({self.position.x:.1f}, {self.position.y:.1f}) - Mur Statique"
+            self.last_move = Vector(0.0, 0.0)
+            return
+
+        old_position = self._position_vector
         
+        if not self.target:
+            self.last_move = Vector(0.0, 0.0)
+            return
+
+        # 1. Calcul de la direction vers la cible
+        direction_to_target = (self.target - self._position_vector).normalize()
+        movement_vector = direction_to_target.scale(self.speed)
+
+        # 2. Calcul de la force d'évitement
+        evasion_vector = self._check_for_obstacles(obstacles)
+
+        # 3. Combinaison des forces
+        if evasion_vector.magnitude() > 0:
+            # Combinaison : 0.5 vers la cible, 1.5 pour l'évitement (favorise l'évitement)
+            combined_vector = movement_vector.scale(0.5) + evasion_vector.scale(1.5)
+            self.is_evading = True
+        else:
+            combined_vector = movement_vector
+            # Si nous revenons à la trajectoire, on désactive l'évitement
+            if self.is_evading and (self.target - self._position_vector).magnitude() > self.speed * 2:
+                 self.is_evading = False
+
+        # 4. Mouvement final
+        target_distance = (self.target - self._position_vector).magnitude()
+        
+        if target_distance > self.speed:
+            # Se déplace d'une longueur 'speed' dans la direction combinée
+            final_move = combined_vector.normalize().scale(self.speed)
+            new_position = self._position_vector + final_move
+        else:
+            # Arrivé à la cible, se déplace exactement à la position cible
+            final_move = self.target - self._position_vector
+            new_position = self.target
+            self.target = None
+            self.target_name = None
+            
+        self._position_vector = new_position
+        self.last_move = self._position_vector - old_position
+            
+    def __str__(self):
+        """Affichage du statut de l'unité."""
+        pos = f"({self.position[0]:.2f}, {self.position[1]:.2f})"
         status = "**ÉVITE**" if self.is_evading else ("Mouvement" if self.target else "Au repos")
-        pos = f"({self.position.x:.1f}, {self.position.y:.1f})"
-        
-        # Afficher le déplacement
         move = f"-> dx:{self.last_move.x:.2f}, dy:{self.last_move.y:.2f}"
-        
         return f"[{self.name}] {pos} - {status} {move}"
-    
-    #Pour unités mobiles :
 
-#status : affiche **ÉVITE** si en évitement, sinon Mouvement si une cible existe, sinon Au repos.
-#pos : position formatée.
-#move : changement de position (dx, dy) formaté à 2 décimales.
-# Retourne une chaîne combinant tout ça, utilisée lors de l’affichage console.
 
-# --- CLASSE DE SIMULATION ET SCÉNARIO (Taille 50x15) ---
+# --- EXEMPLE DE SIMULATION HORS-MAP (pour tester la logique) ---
+# Ce bloc simule l'environnement "sans Map"
+import time
+import os
 
-class Simulation:
-    def __init__(self, width=50, height=15):
-        self.units = []
+class StandaloneSimulation:
+    def __init__(self, width: int = 50, height: int = 15):
+        self.units: List[Unit] = []
         self.steps = 0
-        self.width = width
+        self.width = width # Garde les dimensions pour l'affichage uniquement
         self.height = height
-        self.map_data = [['.' for _ in range(self.width)] for _ in range(self.height)] #matrice (height x width) initialisée avec '.' pour les cellules vides.
 
-    def add_unit(self, unit): #Ajoute une unité à la simulation.
+    def add_unit(self, unit: Unit):
         self.units.append(unit)
 
     def draw_map(self):
-        # Effacer l'écran
+        """Dessine une carte simple en terminal pour visualisation."""
         os.system('cls' if os.name == 'nt' else 'clear')
+        map_data = [['.' for _ in range(self.width)] for _ in range(self.height)]
         
-        # Réinitialiser la carte
-        self.map_data = [['.' for _ in range(self.width)] for _ in range(self.height)]
-        
-        # 1. Placer les cibles, les murs et les unités
-        targets_to_draw = {} # Pour éviter d'écraser les symboles de cible si elles sont au même endroit
-        
+        targets_to_draw = {}
+        units_to_draw = {}
+
+        # 1. Enregistrer les positions (arrondies)
         for unit in self.units:
-            # Enregistrer la cible pour l'affichage (étape 2)
-            #Pour chaque unité, si elle a une target et target_name, on arrondit (round) ses coordonnées et on stocke le nom de cible dans targets_to_draw (seulement si dans les limites de la grille).
+            x_pos, y_pos = unit.position
+            x_grid, y_grid = int(round(x_pos)), int(round(y_pos))
+            
+            if 0 <= y_grid < self.height and 0 <= x_grid < self.width:
+                units_to_draw[(x_grid, y_grid)] = unit.name[0]
+
             if unit.target and unit.target_name:
-                x_target = int(round(unit.target.x))
-                y_target = int(round(unit.target.y))
+                xt, yt = unit.target.x, unit.target.y
+                x_target, y_target = int(round(xt)), int(round(yt))
                 if 0 <= y_target < self.height and 0 <= x_target < self.width:
                     targets_to_draw[(x_target, y_target)] = unit.target_name
-            
-            x_pos = int(round(unit.position.x))
-            y_pos = int(round(unit.position.y))
-            
-            # Afficher le mur statique 'M'
-            if unit.is_static and 0 <= y_pos < self.height and 0 <= x_pos < self.width:
-                 self.map_data[y_pos][x_pos] = 'M'
-            
-            # Afficher l'unité mobile (A ou B)
-            elif 0 <= y_pos < self.height and 0 <= x_pos < self.width:
-                # L'unité affiche toujours son initiale, même en évitant
-                symbol = unit.name[0]
-                self.map_data[y_pos][x_pos] = symbol
 
-        # 2. Afficher les cibles (T1, T2) après avoir placé les unités
-        for (x, y), name in targets_to_draw.items():
-             # Placer la cible seulement si la case est vide (pour ne pas écraser les unités ou murs)
-            if self.map_data[y][x] == '.':
-                 self.map_data[y][x] = name
+        # 2. Placer les symboles
+        for (x, y), symbol in targets_to_draw.items():
+            map_data[y][x] = symbol
 
-        # 3. Afficher la carte dans le terminal
+        for (x, y), symbol in units_to_draw.items():
+            # Les unités écrasent les cibles
+            map_data[y][x] = symbol 
+
+        # 3. Afficher la carte
         print(" " + "=" * self.width)
-        for row in self.map_data:
+        for row in map_data:
             print("|" + "".join(row) + "|")
         print("=" * (self.width + 2))
         
-        # 4. Afficher le statut des unités (avec les mouvements)
-        print(f"\n---  Étape {self.steps} ---")
+        # 4. Afficher le statut
+        print(f"\n--- Étape {self.steps} (Flottant) ---")
         for unit in self.units:
             print(unit)
 
-    def run_step(self):
+    def run_step(self) -> bool:
         self.steps += 1
         
         for unit in self.units:
-            unit.update(self.units)
+            # Passe la liste complète des unités comme obstacles
+            unit.update(self.units) 
 
         self.draw_map()
         
+        # Arrêt si toutes les unités ont atteint leur cible
         if all(unit.target is None for unit in self.units if not unit.is_static):
             return False
         return True
 
-# -----------------------------------------------------------------
+# --- DÉMARRAGE DE LA SIMULATION STANDALONE ---
 
-# --- DÉMARRAGE DE LA SIMULATION ---
-
-sim = Simulation() 
+sim = StandaloneSimulation(width=60, height=18)
 
 # Joueur Mobile Principal (A)
-player_a = Unit(name="A", x=5, y=5, radius=1.0, speed=0.8) 
+player_a = Unit(name="A", x=5.0, y=5.0, radius=1.5, speed=1.0) 
 
 # Obstacle Mobile (B)
-player_b = Unit(name="B", x=45, y=10, radius=1.0, speed=0.5)
+player_b = Unit(name="B", x=50.0, y=10.0, radius=1.5, speed=0.7)
 
-# Mur Statique (M)
-wall = Unit(name="M", x=25, y=7, radius=1.0, speed=0.0, is_static=True)
-
+# "Mur" Statique (représenté par une unité statique)
+wall_static = Unit(name="M", x=30.0, y=9.0, radius=2.0, speed=0.0, is_static=True)
 
 sim.add_unit(player_a)
 sim.add_unit(player_b)
-sim.add_unit(wall) 
+sim.add_unit(wall_static) 
 
-# Cibles : trajectoires diagonales qui se croisent
-# ATTENTION : J'ajoute le nom de la cible dans set_target()
-player_a.set_target(x=40, y=12, name="T1") 
-player_b.set_target(x=10, y=3, name="T2") 
+player_a.set_target(x=55.0, y=15.0, name="T1") 
+player_b.set_target(x=5.0, y=2.0, name="T2") 
 
-print("\n*** DÉBUT DE LA SIMULATION (A doit éviter B et M) ***")
+print("\n*** DÉBUT DE LA SIMULATION SANS MAP (A doit éviter B et M) ***")
 
 MAX_STEPS = 100
 current_step = 0
-animation_delay = 0.2
+animation_delay = 0.1
 
 try:
     while sim.run_step() and current_step < MAX_STEPS:
@@ -240,4 +255,4 @@ try:
 except KeyboardInterrupt:
     print("\nSimulation interrompue par l'utilisateur.")
 
-print("\n*** FIN DE LA SIMULATION ***")
+print(f"\n*** FIN DE LA SIMULATION après {current_step} étapes ***")

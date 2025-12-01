@@ -9,7 +9,7 @@ from frontend.terminal_view import print_map
 import logging
 
 logger = logging.getLogger(__name__)
-MAX_TICKS = 100
+MAX_TICKS = 100 # Valeur déjà définie
 
 @dataclass
 class BattleResult:
@@ -33,14 +33,15 @@ class Battle:
         """
         Run the battle.
 
-        - Runs until one/both armies are destroyed or a fixed maximum of 20 ticks is reached.
+        - Runs until one/both armies are destroyed or a fixed maximum of MAX_TICKS is reached.
         - delay: seconds to sleep after each tick (set to 0 for no sleep / headless).
 
         Returns:
             BattleResult(winner, surviving_units, ticks)
         """
-        while (self.tick < MAX_TICKS
-               and self.army1.living_units()
+        # Mise à jour: utilise MAX_TICKS pour l'arrêt
+        while (self.tick < MAX_TICKS 
+               and self.army1.living_units() 
                and self.army2.living_units()):
             self.tick += 1
             logger.debug("=== Tick %d starting ===", self.tick)
@@ -111,26 +112,47 @@ class Battle:
                      len(self.army1.living_units()) if self.army1 else 0,
                      len(self.army2.living_units()) if self.army2 else 0)
 
-        """Handle combat each tick between units that are within attack range."""
-        # 1) Cooldown management
-        for unit in self.army1.living_units() + self.army2.living_units():
-            if unit.cooldown > 0:
-                unit.cooldown -= 1
-
-        # 2) Handle melee/ranged combat
         all_units = self.army1.living_units() + self.army2.living_units()
-
+        
+        # --- NOUVELLE ÉTAPE 1: MOUVEMENT ---
+        
+        # 0) Préparation pour le mouvement (utilise la méthode move_unit dans Map pour déplacer sur la grille)
+        # Chaque unité doit déterminer sa prochaine position (x, y)
         for unit in all_units:
             if not unit.is_alive() or unit.position is None:
                 continue
 
-            # Determine the opposing army
+            # Tente d'obtenir la position cible du pathfinding
+            new_pos = getattr(unit, "get_next_position", lambda m, a: None)(self.map, all_units)
+            if new_pos is not None:
+                try:
+                    # La carte gère la mise à jour des positions
+                    self.map.move_unit(unit, new_pos[0], new_pos[1])
+                    logger.debug("%s moved from %s to %s", unit.unit_type(), unit.position, new_pos)
+                except ValueError as e:
+                    logger.debug("Move failed for %s: %s", unit.unit_type(), e)
+
+
+        # 1) Cooldown management
+        # Remarque: Les unités qui ont attaqué (attaque_unit) ont leur cooldown mis à jour
+        for unit in all_units:
+            if unit.cooldown > 0:
+                unit.cooldown -= 1
+
+        # 2) Handle melee/ranged combat
+        all_units = self.army1.living_units() + self.army2.living_units() # rafraîchir la liste après mouvement
+
+        for unit in all_units:
+            if not unit.is_alive() or unit.position is None:
+                continue
+            
+            # Déterminer l'armée adverse
             enemy_army = self.army2 if unit.owner == self.army1.owner else self.army1
             enemies = enemy_army.living_units()
             if not enemies:
                 continue
 
-            # Find all enemies within attack range
+            # Trouver tous les ennemis à portée d'attaque
             enemies_in_range = [
                 e for e in enemies
                 if e.position and self.distance(unit, e) <= unit.range
@@ -138,10 +160,10 @@ class Battle:
             if not enemies_in_range:
                 continue
 
-            # Choose the nearest enemy to attack
+            # Choisir l'ennemi le plus proche à attaquer
             target = min(enemies_in_range, key=lambda e: self.distance(unit, e))
 
-            # Attack if cooldown allows
+            # Attaque si le cooldown le permet
             if unit.can_attack():
                 dmg = unit.attack_unit(target)
                 logger.debug("%s attacked %s for %d dmg (target hp=%s)",
@@ -153,12 +175,12 @@ class Battle:
                 print(f"{unit.owner}'s {unit.unit_type()} attacks {target.owner}'s "
                       f"{target.unit_type()} for {dmg} dmg (HP={target.hp})")
 
-            # If the target dies, remove it immediately
-            if not target.is_alive():
-                self.remove_unit(target)
-                logger.debug("%s died (owner=%s)", getattr(target, "unit_type", lambda: "unit")(), target.owner)
-                print(f"💀 {target.owner}'s {target.unit_type()} has died!")
-
+                # Si la cible meurt, la retirer immédiatement
+                if not target.is_alive():
+                    self.remove_unit(target)
+                    logger.debug("%s died (owner=%s)", getattr(target, "unit_type", lambda: "unit")(), target.owner)
+                    print(f"💀 {target.owner}'s {target.unit_type()} has died!")
+            
         # 3) Defensive cleanup (in case of simultaneous deaths)
         for army in [self.army1, self.army2]:
             army.units = army.living_units()

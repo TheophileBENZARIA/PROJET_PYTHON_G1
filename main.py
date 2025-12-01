@@ -3,6 +3,7 @@ import logging
 import argparse
 from typing import Optional
 from backend.scenarios import simple_knight_duel
+from backend.scenarios import mirrored_knight_crossbow_duel
 from backend.generals import CaptainBraindead, MajorDaft
 from backend.battle import Battle
 from backend.save_manager import (
@@ -21,7 +22,7 @@ def run_battle(battle: Optional[Battle] = None, max_ticks: Optional[int] = None,
     Returns the Battle object (mutated) so callers can save/inspect it.
     """
     if battle is None:
-        game_map, army1, army2 = simple_knight_duel()
+        game_map, army1, army2 = mirrored_knight_crossbow_duel()
         general1 = CaptainBraindead()
         general2 = MajorDaft()
         battle = Battle(game_map, army1, general1, army2, general2)

@@ -109,4 +109,4 @@ class Screen :
             self.std.addstr(1+y-min_y,1 + max_x - min_x,c)
 
 
-        self.std.addstr(maxy-1,0,"q pour quitter ; utiliser les flèches pour se déplacer")
+        self.std.addstr(maxy+2,0,"    Q pour quitter            utiliser les flèches pour se déplacer")

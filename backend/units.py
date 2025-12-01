@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class Unit(ABC):
     def __init__(self, owner: str, hp: int, attack: int, armor: int,
-                 speed: int, range_: int, reload_time: int, id: Optional[str] = None):
+                 speed: int, range_: int, reload_time: int,classes=None, bonuses=None, id: Optional[str] = None):
         self.id = id or str(uuid.uuid4())
         self.owner = owner
         self.hp = hp
@@ -20,6 +20,8 @@ class Unit(ABC):
         self.range = range_
         self.reload_time = reload_time
         self.position = None  # (x, y) or None
+        self.classes = classes if classes else []
+        self.bonuses = bonuses if bonuses else {}
         self.cooldown = 0
 
     def is_alive(self) -> bool:
@@ -39,11 +41,23 @@ class Unit(ABC):
 
     def reset_cooldown(self):
         self.cooldown = self.reload_time
+    
+    def compute_bonus(self, target) -> int:
+        """Return the attack bonuses against the target based on its classes."""
+        total = 0
+        for cls in target.classes:
+            if cls in self.bonuses:
+                total += self.bonuses[cls]
+        return total
+
 
     def attack_unit(self, target):
         """Default attack - used by melee and by default for subclasses that don't override."""
         if not target.is_alive():
             return 0
+        # compute total damage including bonuses
+        bonus = self.compute_bonus(target)
+        self.attack += bonus
         dmg = max(1, self.attack - target.armor)
         # apply damage through take_damage to keep behavior consistent
         applied = target.take_damage(dmg)
@@ -66,6 +80,8 @@ class Unit(ABC):
             "reload_time": self.reload_time,
             "position": list(self.position) if self.position is not None else None,
             "cooldown": self.cooldown,
+            "classes":  self.classes,
+            "bonuses":  self.bonuses, 
             "unit_type": self.unit_type(),
         }
 
@@ -95,7 +111,7 @@ class Unit(ABC):
 class Knight(Unit):
     def __init__(self, owner: str, id: Optional[str] = None):
         super().__init__(owner, hp=100, attack=10, armor=2,
-                         speed=2, range_=1, reload_time=2, id=id)
+                         speed=2, range_=1, reload_time=2, classes=["Cavalry"], bonuses={"Infantry": 2}, id=id)
 
     def unit_type(self) -> str:
         return "Knight"
@@ -104,7 +120,7 @@ class Knight(Unit):
 class Pikeman(Unit):
     def __init__(self, owner: str, id: Optional[str] = None):
         super().__init__(owner, hp=55, attack=4, armor=0,
-                         speed=1, range_=1, reload_time=3, id=id)
+                         speed=1, range_=1, reload_time=3, classes=["Infantry", "Spear"], bonuses={"Cavalry": 10}, id=id)
 
     def unit_type(self) -> str:
         return "Pikeman"
@@ -114,7 +130,7 @@ class Crossbowman(Unit):
     def __init__(self, owner: str, id: Optional[str] = None):
         # longer range, slower reload, decent attack
         super().__init__(owner, hp=35, attack=6, armor=0,
-                         speed=1, range_=5, reload_time=3, id=id)
+                         speed=1, range_=5, reload_time=3, classes=["Archer"], bonuses={"Spear": 3, "Building": 0}, id=id)
 
     def unit_type(self) -> str:
         return "Crossbowman"
@@ -147,6 +163,8 @@ class Crossbowman(Unit):
             return 0
 
         # Hit: compute damage using same formula and route through take_damage()
+        bonus = self.compute_bonus(target)
+        self.attack += bonus
         raw_dmg = max(1, self.attack - target.armor)
         applied = target.take_damage(raw_dmg)
         self.cooldown = self.reload_time

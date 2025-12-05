@@ -17,8 +17,8 @@ Chaque général doit implémenter la méthode issue_orders() qui définit sa st
 
 from abc import ABC, abstractmethod  # Pour créer une classe abstraite
 from typing import List, Optional, Tuple  # Pour le typage des variables
-from Unit import Unit  # Import de notre classe Unit
-from Army import Army  # Import de notre classe Army
+from backend import units  # Import de notre classe Unit
+from backend import army  # Import de notre classe Army
 
 
 class General(ABC):  
@@ -47,9 +47,9 @@ class General(ABC):
             name (str) : Nom du général (ex: "Captain Braindead")
         """
         self.name = name  
-        self.army: Optional[Army] = None  
+        self.army: Optional[army] = None
     
-    def set_army(self, army: Army):  
+    def set_army(self, army: army):
         """
         Assigne une armée à ce général
         
@@ -67,7 +67,7 @@ class General(ABC):
         self.army = army 
     
      
-    def issue_orders(self, enemy_army: Army, battlefield_width: int, battlefield_height: int) -> List[str]:
+    def issue_orders(self, enemy_army: army, battlefield_width: int, battlefield_height: int) -> List[str]:
         """
         Donne des ordres à toutes les unités de l'armée
         
@@ -117,7 +117,7 @@ class CaptainBraindead(General):
         """
         super().__init__("Captain Braindead")  
     
-    def issue_orders(self, enemy_army: Army, battlefield_width: int, battlefield_height: int) -> List[str]:
+    def issue_orders(self, enemy_army: army, battlefield_width: int, battlefield_height: int) -> List[str]:
         """
         Captain Braindead ne donne aucun ordre         
         Cette méthode implémente la stratégie défensive passive de Braindead.
@@ -165,9 +165,9 @@ class CaptainBraindead(General):
             else:
                 # Aucun ennemi visible -> reste en position défensive
            
-            unit.action = "defend"  
+                unit.action = "defend"
          
-            actions.append(f"{unit.unit_type.value} at ({unit.x}, {unit.y}) stays in defensive position")
+                actions.append(f"{unit.unit_type.value} at ({unit.x}, {unit.y}) stays in defensive position")
         
         return actions  
 
@@ -196,7 +196,7 @@ class MajorDaft(General):
         """
         super().__init__("Major Daft")  # Appelle le constructeur parent avec le nom
     
-    def issue_orders(self, enemy_army: Army, battlefield_width: int, battlefield_height: int) -> List[str]:
+    def issue_orders(self, enemy_army: army, battlefield_width: int, battlefield_height: int) -> List[str]:
         """
         Major Daft ordonne à toutes ses unités d'avancer vers l'ennemi le plus proche
         
@@ -269,7 +269,7 @@ class MajorDaft(General):
         
         return actions  # Retourne la liste des actions offensives
     
-    def _find_closest_enemy(self, unit: Unit, enemies: List[Unit]) -> Optional[Unit]:
+    def _find_closest_enemy(self, unit: units, enemies: List[units]) -> Optional[units]:
         """
         Trouve l'ennemi le plus proche d'une unité donnée
         
@@ -306,7 +306,7 @@ class MajorDaft(General):
                 
         return closest_enemy  # Retourner l'ennemi le plus proche trouvé
     
-    def _move_towards_target(self, unit: Unit, target: Unit, battlefield_width: int, battlefield_height: int) -> Tuple[int, int]:
+    def _move_towards_target(self, unit: units, target: units, battlefield_width: int, battlefield_height: int) -> Tuple[int, int]:
         """
         Calcule la nouvelle position pour se rapprocher de la cible
         

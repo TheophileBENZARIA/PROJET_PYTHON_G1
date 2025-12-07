@@ -168,6 +168,13 @@ class Unit:
 
 
 # --- EXEMPLE DE SIMULATION HORS-MAP (pour tester la logique) ---
+#Cette section définit le cadre général de la simulation.
+#Ce que c'est : C'est la définition de la classe StandaloneSimulation.
+#Son rôle : Elle sert de gestionnaire central pour l'environnement. Elle contient toute la logique pour :
+#Stocker la liste de toutes les unités (self.units).
+#Faire avancer le temps (le compteur d'étapes self.steps).
+#Appeler la fonction update() sur chaque unité pour les faire bouger.
+#Afficher le résultat dans le terminal (draw_map()).
 
 import time
 import os
@@ -243,7 +250,17 @@ class StandaloneSimulation:
             return False # On s'arrête
         return True # On continue
 
-# --- DÉMARRAGE DE LA SIMULATION STANDALONE ---
+# SIMULATIOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOON standalone
+#Cette section est le point de lancement du programme.
+#Ce que c'est : C'est le bloc de code qui s'exécute.
+#Son rôle : Il crée l'environnement et les acteurs, et lance la boucle de jeu.
+
+# Les étapes concrètes :
+# Il crée une instance du gestionnaire de simulation : sim = StandaloneSimulation(...).
+# Il crée les unités (joueurs A et B, mur M) : player_a = Unit(...), etc.
+# il ajoute ces unités au gestionnaire : sim.add_unit(...).
+#Il donne des cibles aux unités : player_a.set_target(...).
+#Il lance la boucle principale (while sim.run_step()...) qui appelle en continu les fonctions du gestionnaire de simulation.
 
 sim = StandaloneSimulation(width=60, height=18)
 

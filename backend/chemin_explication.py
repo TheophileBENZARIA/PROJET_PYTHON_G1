@@ -1,5 +1,3 @@
-# File: `pathfinding_standalone.py`
-# python
 import math
 # On importe 'math' pour pouvoir utiliser la racine carrée (sqrt) et la puissance (x**2)
 from typing import List, Optional, Tuple

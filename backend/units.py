@@ -1,7 +1,7 @@
 # backend/units.py
 from abc import ABC, abstractmethod
 import uuid
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 import random
 import logging
 
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class Unit(ABC):
     def __init__(self, owner: str, hp: int, attack: int, armor: int,
-                 speed: int, range_: int, reload_time: int,classes=None, bonuses=None, id: Optional[str] = None):
+                 speed: int, range_: int, reload_time: int, classes=None, bonuses=None, id: Optional[str] = None):
         self.id = id or str(uuid.uuid4())
         self.owner = owner
         self.hp = hp
@@ -24,6 +24,9 @@ class Unit(ABC):
         self.bonuses = bonuses if bonuses else {}
         self.cooldown = 0
 
+        # per-unit "order" set by the general each tick: usually a reference to an enemy unit
+        self.current_target = None  # Optional[Unit]
+
     def is_alive(self) -> bool:
         return self.hp > 0
 
@@ -33,7 +36,8 @@ class Unit(ABC):
         self.hp -= applied
         if self.hp < 0:
             self.hp = 0
-        logger.debug("%s took %d damage (after armor=%d) hp now=%d", getattr(self, "unit_type", lambda: "unit")(), applied, self.armor, self.hp)
+        logger.debug("%s took %d damage (after armor=%d) hp now=%d",
+                     getattr(self, "unit_type", lambda: "unit")(), applied, self.armor, self.hp)
         return applied
 
     def can_attack(self) -> bool:
@@ -41,7 +45,7 @@ class Unit(ABC):
 
     def reset_cooldown(self):
         self.cooldown = self.reload_time
-    
+
     def compute_bonus(self, target) -> int:
         """Return the attack bonuses against the target based on its classes."""
         total = 0
@@ -50,19 +54,20 @@ class Unit(ABC):
                 total += self.bonuses[cls]
         return total
 
-
-    def attack_unit(self, target):
-        """Default attack - used by melee and by default for subclasses that don't override."""
+    def attack_unit(self, target) -> Tuple[int, Optional[str]]:
+        """
+        Default attack - used by melee and by default for subclasses that don't override.
+        Returns (applied_damage, optional_message)
+        """
         if not target.is_alive():
-            return 0
-        # compute total damage including bonuses
+            return 0, None
+        # compute total damage including bonuses (do not mutate self.attack permanently)
         bonus = self.compute_bonus(target)
-        self.attack += bonus
-        dmg = max(1, self.attack - target.armor)
-        # apply damage through take_damage to keep behavior consistent
-        applied = target.take_damage(dmg)
+        raw = max(1, (self.attack + bonus) - target.armor)
+        applied = target.take_damage(raw)
         self.cooldown = self.reload_time
-        return applied
+        # no custom message by default
+        return applied, None
 
     @abstractmethod
     def unit_type(self) -> str:
@@ -81,7 +86,7 @@ class Unit(ABC):
             "position": list(self.position) if self.position is not None else None,
             "cooldown": self.cooldown,
             "classes":  self.classes,
-            "bonuses":  self.bonuses, 
+            "bonuses":  self.bonuses,
             "unit_type": self.unit_type(),
         }
 
@@ -108,6 +113,9 @@ class Unit(ABC):
         return unit
 
 
+# -------------------------
+# Per-unit movement AI & concrete units
+# -------------------------
 class Knight(Unit):
     def __init__(self, owner: str, id: Optional[str] = None):
         super().__init__(owner, hp=100, attack=10, armor=2,
@@ -135,15 +143,14 @@ class Crossbowman(Unit):
     def unit_type(self) -> str:
         return "Crossbowman"
 
-    def attack_unit(self, target):
+    def attack_unit(self, target) -> Tuple[int, Optional[str]]:
         """
         Ranged "shoot" attack with a small chance for the target to dodge.
-        - Dodge probability depends on target.speed (faster units dodge a bit more)
-        - Dodge is clamped so it never becomes too frequent.
-        - On a miss, damage applied = 0 but cooldown is still consumed.
+        Returns (applied_damage, message) where message is a short human-readable string
+        that will be added to the battle's compact event log.
         """
         if not target.is_alive():
-            return 0
+            return 0, None
 
         # base dodge chance for ranged shots (tunable)
         base_miss = 0.10  # base 10% miss chance
@@ -154,20 +161,16 @@ class Crossbowman(Unit):
         roll = random.random()
         if roll < dodge_chance:
             # Miss / dodge
-            logger.debug("%s shot by %s missed (roll=%.3f < dodge=%.3f)", getattr(target, "unit_type", lambda: "unit")(), getattr(self, "unit_type", lambda: "unit")(), roll, dodge_chance)
-            # still consume cooldown
             self.cooldown = self.reload_time
-            # small 'glancing' effect could be added here; keep it simple: 0 applied damage
-            # print to terminal so user can see misses
-            print(f"{self.owner}'s {self.unit_type()} fires at {target.owner}'s {target.unit_type()} but it dodges!")
-            return 0
+            msg = f"{self.owner}'s {self.unit_type()} fires at {target.owner}'s {target.unit_type()} but it dodges!"
+            logger.debug(msg + f" (roll={roll:.3f} dodge={dodge_chance:.3f})")
+            return 0, msg
 
         # Hit: compute damage using same formula and route through take_damage()
         bonus = self.compute_bonus(target)
-        self.attack += bonus
-        raw_dmg = max(1, self.attack - target.armor)
-        applied = target.take_damage(raw_dmg)
+        raw = max(1, (self.attack + bonus) - target.armor)
+        applied = target.take_damage(raw)
         self.cooldown = self.reload_time
-        print(f"{self.owner}'s {self.unit_type()} shoots {target.owner}'s {target.unit_type()} for {applied} dmg (HP={target.hp})")
-        logger.debug("%s shot %s for %d (hp after=%d)", self.unit_type(), target.unit_type(), applied, target.hp)
-        return applied
+        msg = f"{self.owner}'s {self.unit_type()} shoots {target.owner}'s {target.unit_type()} for {applied} dmg (HP={target.hp})"
+        logger.debug("%s", msg)
+        return applied, msg

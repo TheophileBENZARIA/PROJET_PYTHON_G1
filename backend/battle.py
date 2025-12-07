@@ -8,7 +8,6 @@ import logging
 from collections import deque
 
 logger = logging.getLogger(__name__)
-MAX_TICKS = 100
 
 @dataclass
 class BattleResult:
@@ -45,11 +44,74 @@ class Battle:
         if not self._suppress_stdout:
             print(entry)
 
+    # --- NEW helper: Bresenham + LOS check ---
+    def _bresenham_line(self, a: Tuple[int,int], b: Tuple[int,int]) -> List[Tuple[int,int]]:
+        """
+        Return the integer grid cells on a line from a to b (including endpoints).
+        Standard Bresenham integer algorithm.
+        """
+        x0, y0 = a
+        x1, y1 = b
+        points = []
+
+        dx = abs(x1 - x0)
+        sx = 1 if x0 < x1 else -1
+        dy = -abs(y1 - y0)
+        sy = 1 if y0 < y1 else -1
+        err = dx + dy  # err = dx + dy
+
+        while True:
+            points.append((x0, y0))
+            if x0 == x1 and y0 == y1:
+                break
+            e2 = 2 * err
+            if e2 >= dy:
+                err += dy
+                x0 += sx
+            if e2 <= dx:
+                err += dx
+                y0 += sy
+        return points
+
+    def _has_line_of_sight(self, attacker_pos: Tuple[int,int], target_pos: Tuple[int,int], attacker_elev: int) -> bool:
+        """
+        Return True if attacker at attacker_pos (with elevation attacker_elev) can see target_pos.
+        LOS is blocked if any intermediate tile (exclusive of endpoints) has:
+          - a building (tile.building is not None), or
+          - elevation strictly greater than attacker_elev.
+
+        This is a conservative rule that prevents melee attackers from striking targets hidden behind hills.
+        """
+        # sanity bounds
+        ax, ay = attacker_pos
+        tx, ty = target_pos
+        width = self.map.width
+        height = self.map.height
+
+        # obtain integer line points
+        line = self._bresenham_line((ax, ay), (tx, ty))
+
+        # check intermediate points only (exclude endpoints)
+        for (x, y) in line[1:-1]:
+            if not (0 <= x < width and 0 <= y < height):
+                # out-of-bounds tile — treat as blocking
+                return False
+            tile = self.map.grid[x][y]
+            # building blocks sight
+            if getattr(tile, "building", None) is not None:
+                return False
+            # hill higher than the attacker's elevation blocks sight
+            try:
+                elev = int(getattr(tile, "elevation", 0) or 0)
+            except Exception:
+                elev = 0
+            if elev > attacker_elev:
+                return False
+        return True
+
     def run(self, delay: float = 0.5, display_callback: Optional[Callable[[Any], None]] = None) -> BattleResult:
         """
-        Run the battle.
-
-        - Runs until one/both armies are destroyed or a fixed maximum of MAX_TICKS is reached.
+        Run the battle until one/both armies are destroyed (no artificial tick cap).
         - delay: seconds to sleep after each tick (set to 0 for headless).
         - display_callback: optional function(game_map) called after update_units each tick to
             update any external display (e.g. curses). If the callback raises KeyboardInterrupt,
@@ -60,9 +122,8 @@ class Battle:
         # when a display callback is provided we suppress normal stdout prints to avoid breaking curses
         self._suppress_stdout = bool(display_callback)
 
-        while (self.tick < MAX_TICKS
-               and self.army1.living_units()
-               and self.army2.living_units()):
+        # Loop until at least one army is empty (no artificial MAX_TICKS limit)
+        while (self.army1.living_units() and self.army2.living_units()):
             self.tick += 1
             logger.debug("=== Tick %d starting ===", self.tick)
             if not self._suppress_stdout:
@@ -148,16 +209,14 @@ class Battle:
             if unit.cooldown > 0:
                 unit.cooldown -= 1
 
-        # 2) Per-unit movement (units decide movement themselves based on current_target)
+        # 2) Per-unit movement (handled by generals or per-unit AI)
         all_units = self.army1.living_units() + self.army2.living_units()
         for unit in list(all_units):  # list() to avoid mutation issues
             try:
-                if unit.is_alive() and unit.position is not None:
-                    # each unit handles its own movement using unit.current_target set by general
-                    if hasattr(unit, "perform_movement"):
-                        unit.perform_movement(self.map)
+                # some units may implement perform_movement(game_map)
+                if unit.is_alive() and unit.position is not None and hasattr(unit, "perform_movement"):
+                    unit.perform_movement(self.map)
             except Exception:
-                # be robust to badly-behaved unit AI
                 logger.exception("Error during movement for unit %s", getattr(unit, "id", "<unknown>"))
                 continue
 
@@ -175,10 +234,45 @@ class Battle:
                 continue
 
             # Find all enemies within attack range
-            enemies_in_range = [
-                e for e in enemies
-                if e.position and self.distance(unit, e) <= unit.range
-            ]
+            enemies_in_range = []
+            try:
+                ux, uy = unit.position
+                unit_elev = int(getattr(self.map.grid[ux][uy], "elevation", 0) or 0) if (0 <= ux < self.map.width and 0 <= uy < self.map.height) else 0
+            except Exception:
+                ux = uy = None
+                unit_elev = 0
+
+            for e in enemies:
+                if not e.position:
+                    continue
+                # distance check (Manhattan)
+                if self.distance(unit, e) > unit.range:
+                    continue
+
+                # determine target elevation
+                try:
+                    tx, ty = e.position
+                    target_elev = int(getattr(self.map.grid[tx][ty], "elevation", 0) or 0) if (0 <= tx < self.map.width and 0 <= ty < self.map.height) else 0
+                except Exception:
+                    target_elev = 0
+
+                # If attacker is melee (range <= 1), they cannot attack targets that are strictly higher (uphill).
+                if (unit.range <= 1) and (target_elev > unit_elev):
+                    continue
+
+                # NEW: For melee, also require line-of-sight (no taller hill/building between)
+                if unit.range <= 1:
+                    try:
+                        if not self._has_line_of_sight((ux, uy), (tx, ty), unit_elev):
+                            # melee attacker cannot see the target because of intervening hill/building
+                            # (don't include as in-range)
+                            continue
+                    except Exception:
+                        # on error be conservative and skip target
+                        continue
+
+                enemies_in_range.append(e)
+
             if not enemies_in_range:
                 continue
 
@@ -187,10 +281,8 @@ class Battle:
 
             # Attack if cooldown allows
             if unit.can_attack():
-                # attack_unit may return either:
-                #   - int applied_damage
-                #   - (int applied_damage, Optional[str] message)
-                res = unit.attack_unit(target)
+                # pass game_map to attack_unit so units (e.g. Crossbowman) can use tile info (hills)
+                res = unit.attack_unit(target, game_map=self.map)
                 if isinstance(res, tuple):
                     applied, msg = res
                 else:

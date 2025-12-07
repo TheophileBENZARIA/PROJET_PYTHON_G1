@@ -54,9 +54,10 @@ class Unit(ABC):
                 total += self.bonuses[cls]
         return total
 
-    def attack_unit(self, target) -> Tuple[int, Optional[str]]:
+    def attack_unit(self, target, game_map=None) -> Tuple[int, Optional[str]]:
         """
         Default attack - used by melee and by default for subclasses that don't override.
+        Accepts optional game_map so subclasses can inspect tile properties (elevation/buildings).
         Returns (applied_damage, optional_message)
         """
         if not target.is_alive():
@@ -143,10 +144,12 @@ class Crossbowman(Unit):
     def unit_type(self) -> str:
         return "Crossbowman"
 
-    def attack_unit(self, target) -> Tuple[int, Optional[str]]:
+    def attack_unit(self, target, game_map=None) -> Tuple[int, Optional[str]]:
         """
         Ranged "shoot" attack with a small chance for the target to dodge.
-        Returns (applied_damage, message) where message is a short human-readable string
+        If `game_map` is provided and the attacker stands on a hill (elevation > 0),
+        the shot deals additional damage (1 extra per elevation level). This function
+        returns (applied_damage, message) where message is a short human-readable string
         that will be added to the battle's compact event log.
         """
         if not target.is_alive():
@@ -163,14 +166,34 @@ class Crossbowman(Unit):
             # Miss / dodge
             self.cooldown = self.reload_time
             msg = f"{self.owner}'s {self.unit_type()} fires at {target.owner}'s {target.unit_type()} but it dodges!"
-            logger.debug(msg + f" (roll={roll:.3f} dodge={dodge_chance:.3f})")
+            logger.debug("%s (roll=%.3f dodge=%.3f)", msg, roll, dodge_chance)
             return 0, msg
 
-        # Hit: compute damage using same formula and route through take_damage()
+        # Hit: compute base damage
         bonus = self.compute_bonus(target)
         raw = max(1, (self.attack + bonus) - target.armor)
-        applied = target.take_damage(raw)
+
+        # Hill amplification if game_map provided and attacker stands on an elevated tile
+        hill_bonus = 0
+        try:
+            if game_map is not None and self.position is not None:
+                ux, uy = self.position
+                if 0 <= ux < game_map.width and 0 <= uy < game_map.height:
+                    tile = game_map.grid[ux][uy]
+                    if getattr(tile, "elevation", 0) and int(tile.elevation) > 0:
+                        hill_bonus = int(tile.elevation)  # +1 damage per elevation level
+        except Exception:
+            hill_bonus = 0
+
+        total_raw = raw + hill_bonus
+        applied = target.take_damage(total_raw)
         self.cooldown = self.reload_time
-        msg = f"{self.owner}'s {self.unit_type()} shoots {target.owner}'s {target.unit_type()} for {applied} dmg (HP={target.hp})"
+
+        if hill_bonus > 0:
+            msg = (f"{self.owner}'s {self.unit_type()} (on hill+{hill_bonus}) shoots "
+                   f"{target.owner}'s {target.unit_type()} for {applied} dmg (HP={target.hp})")
+        else:
+            msg = f"{self.owner}'s {self.unit_type()} shoots {target.owner}'s {target.unit_type()} for {applied} dmg (HP={target.hp})"
+
         logger.debug("%s", msg)
         return applied, msg

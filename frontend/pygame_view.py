@@ -12,7 +12,10 @@ import time
 import math
 import threading
 import queue
+from turtle import delay
 from typing import Dict, Any, List, Tuple, Optional
+
+from backend import battle
 
 try:
     import pygame
@@ -332,12 +335,88 @@ class PygameView:
             status = font.render(f"Tick: {tick}   Press Q to quit", True, (220, 220, 220))
             self.screen.blit(status, (8, ui_base_y + 6 * 18))
 
+                        # === ARMY COUNTERS WITH BACKGROUND PANEL ===
+            army1 = (curr_snapshot or prev_snapshot or {}).get("army1_types", {})
+            army2 = (curr_snapshot or prev_snapshot or {}).get("army2_types", {})
+
+            panel_x = self.width_px - 220      # slightly wider 
+            panel_y = 25                       # LOWERED 
+            panel_w = 210
+            panel_h = 200                      # you can increase if needed
+
+            # draw semi-transparent background
+            panel_surface = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+            panel_surface.fill((20, 20, 20, 180))  # RGBA → 180/255 = semi transparent
+            self.screen.blit(panel_surface, (panel_x, panel_y))
+
+            # draw text on top
+            title1 = font.render("Army 1:", True, (255, 255, 100))
+            self.screen.blit(title1, (panel_x + 10, panel_y + 10))
+
+            y = panel_y + 30
+            for unit_type, count in army1.items():
+                txt = font.render(f"{unit_type}: {count}", True, (255, 255, 255))
+                self.screen.blit(txt, (panel_x + 10, y))
+                y += 18
+
+            y += 10
+            title2 = font.render("Army 2:", True, (255, 180, 100))
+            self.screen.blit(title2, (panel_x + 10, y))
+            y += 20
+
+            for unit_type, count in army2.items():
+                txt = font.render(f"{unit_type}: {count}", True, (230, 230, 230))
+                self.screen.blit(txt, (panel_x + 10, y))
+                y += 18
+
+            # === DYNAMIC MINIMAP ===
+            minimap_w, minimap_h = 120, 120
+            minimap_x, minimap_y = 10, 10
+
+            # reuse surface instead of recreating every frame
+            if not hasattr(self, "_minimap_surface"):
+                self._minimap_surface = pygame.Surface((minimap_w, minimap_h))
+            minimap_surface = self._minimap_surface
+            minimap_surface.fill((50, 150, 50))  # green background
+
+            units = (curr_snapshot or prev_snapshot or {}).get("units", [])
+
+            map_width = max(1, self.map.width)
+            map_height = max(1, self.map.height)
+
+            for u in units:
+                pos = u.get("pos")
+                if not pos:
+                    continue
+                x, y = pos
+                mini_x = int(x / map_width * minimap_w)
+                mini_y = int(y / map_height * minimap_h)
+                
+                # safe color based on owner string
+                owner = u.get("owner", "")
+                if owner == "Player1":
+                    color = (255, 255, 0)
+                else:
+                    color = (255, 0, 0)
+                
+                # ensure dots are inside minimap bounds
+                mini_x = min(max(mini_x, 0), minimap_w-1)
+                mini_y = min(max(mini_y, 0), minimap_h-1)
+                
+                pygame.draw.rect(minimap_surface, color, (mini_x, mini_y, 2, 2))
+
+            # optional border
+            pygame.draw.rect(minimap_surface, (200, 200, 200), (0, 0, minimap_w, minimap_h), 1)
+
+            # blit minimap
+            self.screen.blit(minimap_surface, (minimap_x, minimap_y))
+
             pygame.display.flip()
             self.clock.tick(FPS)
 
         pygame.quit()
 
-
+    
 def launch_pygame_battle(battle, delay: float = 0.5, assets_dir: str = "frontend/pygame_assets"):
     """
     Launch pygame window and run the battle concurrently.
@@ -348,10 +427,15 @@ def launch_pygame_battle(battle, delay: float = 0.5, assets_dir: str = "frontend
     if pygame is None:
         raise RuntimeError("pygame not available; install via `pip install pygame`")
 
+    # snapshot queue shared between battle thread and graphics thread
     snap_q: "queue.Queue[Dict]" = queue.Queue(maxsize=16)
 
     def snapshot_callback(game_map):
+        """Called every tick by the battle engine. Produces a snapshot."""
         units = []
+        army1_types = {}
+        army2_types = {}
+
         for army in (battle.army1, battle.army2):
             for u in army.living_units():
                 units.append({
@@ -361,25 +445,42 @@ def launch_pygame_battle(battle, delay: float = 0.5, assets_dir: str = "frontend
                     "hp": getattr(u, "hp", None),
                     "pos": tuple(u.position) if u.position is not None else None,
                 })
+
+                # count unit types per army
+                target_dict = army1_types if army is battle.army1 else army2_types
+                ut = u.unit_type()
+                target_dict[ut] = target_dict.get(ut, 0) + 1
+
         try:
             events = list(battle.event_log)[-6:]
         except Exception:
             events = []
-        snap = {"units": units, "tick": getattr(battle, "tick", 0), "events": events}
+
+        snap = {
+            "units": units,
+            "tick": getattr(battle, "tick", 0),
+            "events": events,
+            "army1_types": army1_types,
+            "army2_types": army2_types,
+        }
+
         try:
             snap_q.put_nowait(snap)
         except queue.Full:
             pass
 
+    # create view
     view = PygameView(battle.map, tile_size=TILE_SIZE, assets_dir=assets_dir)
 
+    # run battle in separate thread
     def battle_thread_fn():
         try:
             battle.run(delay=delay, display_callback=snapshot_callback)
-        except Exception:
-            pass
+        except Exception as e:
+            print("[Battle thread crashed]:", e)
 
     bt = threading.Thread(target=battle_thread_fn, daemon=True)
     bt.start()
 
+    # graphics loop
     view.run(snap_q, tick_delay=delay)

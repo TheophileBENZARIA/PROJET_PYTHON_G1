@@ -1,4 +1,5 @@
 # main.py
+import backend
 import logging
 import argparse
 from typing import Optional, Dict, Tuple, List, Type
@@ -257,6 +258,50 @@ def build_mirrored_battle_from_composition(comp: Dict[str, int], width: int = 20
 
     return game_map, army1, army2
 
+def build_mirrored_battle_from_custom_positions(positions, width=20, height=20):
+    from backend.map import Map
+    from backend.army import Army
+    from backend.units import Knight, Pikeman, Crossbowman
+
+    _UNIT_CLASSES = {
+        "knight": Knight,
+        "pikeman": Pikeman,
+        "crossbowman": Crossbowman
+    }
+
+    game_map = Map(width, height)
+
+    # terrain par défaut
+    _place_default_terrain(game_map)
+
+    army1 = Army("Player1")
+    army2 = Army("Player2")
+
+    for unit_type, coords in positions.items():
+        cls = _UNIT_CLASSES[unit_type]
+        for (x, y) in coords:
+
+            # --- Player1 ---
+            u1 = cls("Player1")
+            tile1 = game_map.grid[x][y]
+            if tile1.is_empty():
+                game_map.place_unit(u1, x, y)
+                army1.add_unit(u1)
+            else:
+                raise ValueError(f"Tile P1 {x,y} non vide")
+
+            # --- Player2 (miroir vertical) ---
+            my = height - 1 - y
+            u2 = cls("Player2")
+            tile2 = game_map.grid[x][my]
+            if tile2.is_empty():
+                game_map.place_unit(u2, x, my)
+                army2.add_unit(u2)
+            else:
+                raise ValueError(f"Tile P2 {x,my} non vide")
+
+    return game_map, army1, army2
+
 
 def run_battle(battle: Optional[Battle] = None, max_ticks: Optional[int] = None, delay: float = 0.5,
                use_curses: bool = False, use_pygame: bool = False, assets_dir: Optional[str] = None):
@@ -403,6 +448,16 @@ def main():
         "--assets-dir", type=str, default="frontend/pygame_assets", help="Directory containing pygame assets (tiles/sprites)"
     )
 
+
+    place_parser = subparsers.add_parser("place", help="Place units manually using curses")
+    place_parser.add_argument(
+    "--curses",
+    action="store_true",
+    dest="use_curses",
+    help="Use curses interface for placement"
+    )
+
+
     args = parser.parse_args()
 
     if args.mode == "run":
@@ -439,6 +494,25 @@ def main():
                 choice2 = input("Do you want to save the continued battle? (y/n): ")
                 if choice2.lower().startswith("y"):
                     choose_save_method_and_save(battle)
+
+    elif args.mode == "place":
+        from frontend.Terminal.placement import curses_placement_editor
+
+        print("Opening placement editor...")
+        base_map = Map(20,20)
+        _place_default_terrain(base_map)
+
+        positions = curses_placement_editor(base_map)
+
+        print("Building armies...")
+        game_map, army1, army2 = build_mirrored_battle_from_custom_positions(positions)
+
+        general1 = CaptainBraindead()
+        general2 = MajorDaft()
+        battle = Battle(game_map, army1, general1, army2, general2)
+
+        print("Launching battle...")
+        launch_curses_battle(battle)
 
     else:
         parser.print_help()

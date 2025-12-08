@@ -1,6 +1,6 @@
 import time
 import copy
-from pathfinding import Unit as SteeringUnit
+from chemin_explication import Unit as SteeringUnit
 from units import Baseunit
 
 
@@ -23,7 +23,7 @@ class Game:
             x = x,
             y = y,
             radius = 0.5,          
-            speed = unit.speed,    # same speed as RTS unit
+            speed = unit.speed,   
             is_static = False
         )
 

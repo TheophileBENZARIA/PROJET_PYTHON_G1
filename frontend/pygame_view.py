@@ -369,15 +369,17 @@ class PygameView:
                 self.screen.blit(txt, (panel_x + 10, y))
                 y += 18
 
-            # === DYNAMIC MINIMAP ===
+            # === DYNAMIC MINIMAP WITH TRANSPARENCY ===
             minimap_w, minimap_h = 120, 120
             minimap_x, minimap_y = 10, 10
 
-            # reuse surface instead of recreating every frame
+            # create a surface with per-pixel alpha once
             if not hasattr(self, "_minimap_surface"):
-                self._minimap_surface = pygame.Surface((minimap_w, minimap_h))
+                self._minimap_surface = pygame.Surface((minimap_w, minimap_h), pygame.SRCALPHA)
             minimap_surface = self._minimap_surface
-            minimap_surface.fill((50, 150, 50))  # green background
+
+            # fill with transparent green (R, G, B, Alpha)
+            minimap_surface.fill((50, 180, 50, 120))  # 120/255 = semi-transparent
 
             units = (curr_snapshot or prev_snapshot or {}).get("units", [])
 
@@ -392,23 +394,18 @@ class PygameView:
                 mini_x = int(x / map_width * minimap_w)
                 mini_y = int(y / map_height * minimap_h)
                 
-                # safe color based on owner string
                 owner = u.get("owner", "")
-                if owner == "Player1":
-                    color = (255, 255, 0)
-                else:
-                    color = (255, 0, 0)
+                color = (255, 255, 0) if owner == "Player1" else (255, 0, 0)
                 
-                # ensure dots are inside minimap bounds
                 mini_x = min(max(mini_x, 0), minimap_w-1)
                 mini_y = min(max(mini_y, 0), minimap_h-1)
                 
                 pygame.draw.rect(minimap_surface, color, (mini_x, mini_y, 2, 2))
 
-            # optional border
-            pygame.draw.rect(minimap_surface, (200, 200, 200), (0, 0, minimap_w, minimap_h), 1)
+            # optional semi-transparent border
+            pygame.draw.rect(minimap_surface, (200, 200, 200, 180), (0, 0, minimap_w, minimap_h), 1)
 
-            # blit minimap
+            # blit minimap with alpha onto the screen
             self.screen.blit(minimap_surface, (minimap_x, minimap_y))
 
             pygame.display.flip()

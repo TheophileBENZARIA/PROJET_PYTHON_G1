@@ -2,6 +2,8 @@
 from .map import Map
 from .army import Army
 from .units import Knight, Crossbowman, Pikeman
+import math
+from typing import Tuple
 
 def _add_sample_terrain(game_map: Map):
     """Add a few buildings and hills to the provided map for scenario testing."""
@@ -137,5 +139,99 @@ def mirrored_triplet_pikeman_knight_crossbow_duel():
     army2.add_unit(p2)
     army2.add_unit(k2)
     army2.add_unit(c2)
+
+    return game_map, army1, army2
+
+
+# ----------------------------
+# Lanchester scenario generator
+# ----------------------------
+def lanchester(unit_type: str, N: int, width: int = 40, height: int = 20) -> Tuple[Map, Army, Army]:
+    """
+    Build a Lanchester-style scenario for testing Lanchester's Laws.
+
+    Parameters:
+      unit_type: 'melee' or 'archer' (case-insensitive). 'melee' uses Knight,
+                 'archer' uses Crossbowman.
+      N: base number of units on the weaker side. The opposing side will have 2*N.
+      width, height: map size.
+
+    Returns (game_map, army1, army2) where:
+      - army1 (Player1) has N units
+      - army2 (Player2) has 2*N units
+    Units are placed facing each other with spacing chosen so both sides can engage immediately
+    according to the rules for melee/ranged (melee placed adjacent rows, archers within range).
+    """
+    if unit_type.lower() not in ("melee", "archer"):
+        raise ValueError("unit_type must be 'melee' or 'archer'")
+
+    game_map = Map(width, height)
+    _add_sample_terrain(game_map)
+
+    army1 = Army("Player1")
+    army2 = Army("Player2")
+
+    # choose class
+    if unit_type.lower() == "melee":
+        UnitCls = Knight
+        # melee need adjacent rows to immediately fight -> small vertical gap
+        p1_row = height // 2 - 1
+        p2_row = height // 2
+    else:
+        UnitCls = Crossbowman
+        # archers should be within shooting range of each other; Crossbowman.range is typically 5
+        # place them a few tiles apart but within range so they shoot from the start
+        p1_row = height // 2 - 3
+        p2_row = height // 2 + 3
+
+    # determine columns per side (fit N units centered)
+    def place_row_count(count, row_y, owner, army):
+        if count <= 0:
+            return
+        cols = min(count, max(1, width - 4))
+        # we will create as many rows as needed
+        rows_needed = math.ceil(count / cols)
+        placed = 0
+        for r in range(rows_needed):
+            y = row_y + r  # for Player1 rows go downward; for Player2 caller may pass appropriate start
+            if y < 0 or y >= height:
+                # try shift up/down within bounds
+                y = max(0, min(height - 1, y))
+            to_place = min(cols, count - placed)
+            start_x = max(2, (width - to_place) // 2)
+            for i in range(to_place):
+                x = start_x + i
+                # ensure tile not occupied (terrain may be present); scan nearby if needed
+                if not (0 <= x < width and 0 <= y < height):
+                    continue
+                tile = game_map.grid[x][y]
+                if tile.is_empty():
+                    u = UnitCls(owner)
+                    game_map.place_unit(u, x, y)
+                    army.add_unit(u)
+                    placed += 1
+                else:
+                    # scan row for nearest empty
+                    found = False
+                    for d in range(1, width):
+                        for candidate in (x + d, x - d):
+                            if 0 <= candidate < width and game_map.grid[candidate][y].is_empty():
+                                u = UnitCls(owner)
+                                game_map.place_unit(u, candidate, y)
+                                army.add_unit(u)
+                                placed += 1
+                                found = True
+                                break
+                        if found:
+                            break
+            if placed >= count:
+                break
+
+    # Player1 (weaker) N units
+    place_row_count(N, p1_row, "Player1", army1)
+
+    # Player2 (stronger) 2*N units - place mirrored vertically around center to face Player1
+    # We will attempt to place rows starting at p2_row (which is lower than p1_row for melee/archer)
+    place_row_count(2 * N, p2_row, "Player2", army2)
 
     return game_map, army1, army2

@@ -22,6 +22,9 @@ except Exception:
 from backend.map import Map
 from backend.units import Knight, Pikeman, Crossbowman
 
+# Import Lanchester scenario generator
+from backend.scenarios import lanchester
+
 # available unit types (lowercase keys used internally)
 _UNIT_CLASSES = {
     "knight": Knight,
@@ -422,6 +425,17 @@ def main():
         "--assets-dir", type=str, default="frontend/pygame_assets", help="Directory containing pygame assets (tiles/sprites)"
     )
 
+    # lanchester scenario
+    lan_parser = subparsers.add_parser("lanchester", help="Run a Lanchester scenario (N vs 2N)")
+    lan_parser.add_argument("--type", "-u", choices=["melee", "archer"], default="melee",
+                            help="Unit type: 'melee' (Knight) or 'archer' (Crossbowman)")
+    lan_parser.add_argument("--N", "-n", type=int, required=True, help="Base number of units on weaker side (will fight 2*N)")
+    lan_parser.add_argument("--delay", "-d", type=float, default=0.0, help="Delay between ticks (0 for headless fast runs)")
+    lan_parser.add_argument("--curses", action="store_true", dest="use_curses", help="Use curses terminal display")
+    lan_parser.add_argument("--pygame", action="store_true", dest="use_pygame", help="Use pygame display if available")
+    lan_parser.add_argument("--assets-dir", type=str, default="frontend/pygame_assets", help="Directory containing pygame assets (tiles/sprites)")
+    lan_parser.add_argument("--save", type=str, default=None, help="Optional filename (.json) to save final battle state")
+
     # load saved battle and optionally continue running it
     load_parser = subparsers.add_parser("load", help="Load a battle state")
     load_parser.add_argument("filename", help="Name of save file to load")
@@ -467,6 +481,38 @@ def main():
         choice = input("Do you want to save this battle? (y/n): ")
         if choice.lower().startswith("y"):
             choose_save_method_and_save(battle)
+
+    elif args.mode == "lanchester":
+        # Build scenario and run it
+        unit_type = args.type
+        N = args.N
+        width = 40
+        height = 20
+        game_map, army1, army2 = lanchester(unit_type, N, width=width, height=height)
+
+        # Use active generals that will honor aggro/targets
+        # For Lanchester experiments keep both generals the same for symmetry
+        general1 = MajorDaft()
+        general2 = MajorDaft()
+        battle = Battle(game_map, army1, general1, army2, general2)
+
+        print(f"Running Lanchester scenario: type={unit_type} | N={N} vs 2*N={2*N}")
+        print_map(battle.map)
+        battle.debug_print_tick()
+
+        # Prefer headless fast runs by default (delay from args)
+        battle = run_battle(battle=battle, delay=args.delay, use_curses=args.use_curses, use_pygame=args.use_pygame, assets_dir=args.assets_dir)
+
+        # After run, print final counts and optionally save
+        army1_surv = len(battle.army1.living_units())
+        army2_surv = len(battle.army2.living_units())
+        print(f"Lanchester result: Player1 (N={N}) survivors: {army1_surv}  |  Player2 (2N={2*N}) survivors: {army2_surv}")
+
+        if args.save:
+            if args.save.lower().endswith(".json"):
+                save_battle_json(battle, args.save)
+            else:
+                save_battle_pickle(battle, args.save)
 
     elif args.mode == "load":
         try:

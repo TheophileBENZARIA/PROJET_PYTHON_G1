@@ -122,10 +122,10 @@ class Battle:
         # when a display callback is provided we suppress normal stdout prints to avoid breaking curses
         self._suppress_stdout = bool(display_callback)
 
-        # Loop until at least one army is empty (no artificial MAX_TICKS limit)
+        # Loop until at least one army is empty
         while (self.army1.living_units() and self.army2.living_units()):
             self.tick += 1
-            logger.debug("=== Tick %d starting ===", self.tick)
+            #logger.debug("=== Tick %d starting ===", self.tick)
             if not self._suppress_stdout:
                 print(f"\n--- Tick {self.tick} ---")
 
@@ -133,12 +133,12 @@ class Battle:
             self.general1.issue_orders(self.army1, self.army2, self.map)
             self.general2.issue_orders(self.army2, self.army1, self.map)
 
-            logger.debug("About to call update_units (tick=%d)", self.tick)
+            #logger.debug("About to call update_units (tick=%d)", self.tick)
 
             # update game state (movement, attacks, cooldowns, death cleanup)
             self.update_units()
 
-            logger.debug("Returned from update_units (tick=%d)", self.tick)
+            #logger.debug("Returned from update_units (tick=%d)", self.tick)
 
             # If provided, call the display callback so an external UI can update.
             if display_callback:
@@ -167,10 +167,13 @@ class Battle:
 
         if army1_alive and not army2_alive:
             winner = self.general1.name
+            print(f"\n🏆 {winner} wins after {self.tick} ticks! 🏆\n")
         elif army2_alive and not army1_alive:
             winner = self.general2.name
+            print(f"\n🏆 {winner} wins after {self.tick} ticks! 🏆\n")
         else:
             winner = "Draw"
+            print(f"\n🤝 The battle ends in a draw after {self.tick} ticks! 🤝\n")
 
         # collect surviving units as serializable dicts
         surviving_units: Dict[str, List[Dict[str, Any]]] = {}
@@ -198,18 +201,18 @@ class Battle:
         print("---------------------")
 
     def update_units(self):
-        logger.debug("entered update_units tick=%d: army1=%s army2=%s",
+        """logger.debug("entered update_units tick=%d: army1=%s army2=%s",
                      self.tick,
                      len(self.army1.living_units()) if self.army1 else 0,
-                     len(self.army2.living_units()) if self.army2 else 0)
+                     len(self.army2.living_units()) if self.army2 else 0)"""
 
         """Handle per-tick updates: cooldowns, movement (per-unit AI), then combat."""
-        # 1) Cooldown management
+        # Cooldown management
         for unit in self.army1.living_units() + self.army2.living_units():
             if unit.cooldown > 0:
                 unit.cooldown -= 1
 
-        # 2) Per-unit movement (handled by generals or per-unit AI)
+        # Per-unit movement (handled by generals or per-unit AI)
         all_units = self.army1.living_units() + self.army2.living_units()
         for unit in list(all_units):  # list() to avoid mutation issues
             try:
@@ -220,7 +223,7 @@ class Battle:
                 logger.exception("Error during movement for unit %s", getattr(unit, "id", "<unknown>"))
                 continue
 
-        # 3) Handle melee/ranged combat
+        # Handle melee/ranged combat
         all_units = self.army1.living_units() + self.army2.living_units()
 
         for unit in all_units:
@@ -260,7 +263,7 @@ class Battle:
                 if (unit.range <= 1) and (target_elev > unit_elev):
                     continue
 
-                # NEW: For melee, also require line-of-sight (no taller hill/building between)
+                #For melee, also require line-of-sight (no taller hill/building between)
                 if unit.range <= 1:
                     try:
                         if not self._has_line_of_sight((ux, uy), (tx, ty), unit_elev):
@@ -288,11 +291,11 @@ class Battle:
                 else:
                     applied, msg = res, None
 
-                logger.debug("%s attacked %s for %s dmg (target hp=%s)",
+                """logger.debug("%s attacked %s for %s dmg (target hp=%s)",
                              getattr(unit, "unit_type", lambda: "unit")(),
                              getattr(target, "unit_type", lambda: "unit")(),
                              applied,
-                             getattr(target, "hp", None))
+                             getattr(target, "hp", None))"""
 
                 # Build an event message: prefer explicit msg from unit, otherwise synthesize
                 if msg:
@@ -303,7 +306,7 @@ class Battle:
             # If the target dies, remove it immediately and log
             if not target.is_alive():
                 self.remove_unit(target)
-                logger.debug("%s died (owner=%s)", getattr(target, "unit_type", lambda: "unit")(), target.owner)
+                #logger.debug("%s died (owner=%s)", getattr(target, "unit_type", lambda: "unit")(), target.owner)
                 self.add_event(f"💀 {target.owner}'s {target.unit_type()} has died!")
 
         # 4) Defensive cleanup (in case of simultaneous deaths)

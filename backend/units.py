@@ -195,5 +195,5 @@ class Crossbowman(Unit):
         else:
             msg = f"{self.owner}'s {self.unit_type()} shoots {target.owner}'s {target.unit_type()} for {applied} dmg (HP={target.hp})"
 
-        logger.debug("%s", msg)
+        #logger.debug("%s", msg)
         return applied, msg

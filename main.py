@@ -32,6 +32,20 @@ _UNIT_CLASSES = {
     "crossbowman": Crossbowman,
 }
 
+CASTLE_HP = 300
+
+def _place_castles_on_map(game_map: Map):
+    """
+    Place a Player1 castle near the top center and a Player2 castle near the bottom center.
+    Castles are placed 'behind the troops' so top/bottom rows are used.
+    """
+    cx = game_map.width // 2
+    top_y = 0
+    bot_y = game_map.height - 1
+    # set building dicts with hp and owner
+    game_map.grid[cx][top_y].building = {"type": "castle", "owner": "Player1", "hp": CASTLE_HP, "max_hp": CASTLE_HP}
+    game_map.grid[cx][bot_y].building = {"type": "castle", "owner": "Player2", "hp": CASTLE_HP, "max_hp": CASTLE_HP}
+
 
 def ask_for_composition_interactive() -> Dict[str, int]:
     """
@@ -196,6 +210,8 @@ def build_mirrored_battle_from_composition(comp: Dict[str, int], width: int = 20
     required_rows = len(rows)
     if required_rows == 0:
         # nothing to place
+        # still place castles
+        _place_castles_on_map(game_map)
         return game_map, army1, army2
 
     # center the rows block inside the available top-half vertically
@@ -259,6 +275,9 @@ def build_mirrored_battle_from_composition(comp: Dict[str, int], width: int = 20
     mirrored_rows_for_p2 = list(reversed(rows))
     place_rows_for_army(mirrored_rows_for_p2, "Player2", bottom_start_row, army2)
 
+    # Place castles behind the troops
+    _place_castles_on_map(game_map)
+
     return game_map, army1, army2
 
 def build_mirrored_battle_from_custom_positions(positions, width=20, height=20):
@@ -302,6 +321,9 @@ def build_mirrored_battle_from_custom_positions(positions, width=20, height=20):
                 army2.add_unit(u2)
             else:
                 raise ValueError(f"Tile P2 {x,my} non vide")
+
+    # place castles behind troops so they always appear in normal battles
+    _place_castles_on_map(game_map)
 
     return game_map, army1, army2
 

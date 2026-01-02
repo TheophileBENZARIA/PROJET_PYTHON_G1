@@ -15,6 +15,7 @@ class UniteTerm:
     BUILDING_CHAR = "O"
     HILL_CHAR = "H"
     EMPTY_CHAR = "."
+    CASTLE_CHAR = "N"
 
     def __init__(self, lettre: str = EMPTY_CHAR, team: Optional[int] = None,
                  vie: Optional[int] = None, building: bool = False, elevation: int = 0):
@@ -27,6 +28,9 @@ class UniteTerm:
     def __str__(self):
         # If this is a building or hill tile (and no unit), prefer terrain symbol
         if self.building:
+            # If a specific letter set (e.g. castle 'N'), show it; otherwise use generic BUILDING_CHAR
+            if self.lettre and self.lettre != self.EMPTY_CHAR:
+                return self.lettre
             return self.BUILDING_CHAR
         if self.elevation and self.lettre == self.EMPTY_CHAR:
             return self.HILL_CHAR
@@ -84,9 +88,16 @@ def from_tile(tile) -> "UniteTerm":
     if unit is not None:
         return from_unit(unit, tile)
 
-    building = getattr(tile, "building", None) is not None
+    building = getattr(tile, "building", None)
     elevation = int(getattr(tile, "elevation", 0) or 0)
     if building:
+        # castle building stored as dict with type 'castle'
+        if isinstance(building, dict) and building.get("type") == "castle":
+            owner = building.get("owner")
+            team = 1 if owner == "Player1" else (2 if owner == "Player2" else None)
+            hp = building.get("hp")
+            return UniteTerm(UniteTerm.CASTLE_CHAR, team, hp, building=True, elevation=elevation)
+        # generic building
         return UniteTerm(UniteTerm.BUILDING_CHAR, None, None, building=True, elevation=elevation)
     if elevation > 0:
         return UniteTerm(UniteTerm.HILL_CHAR, None, None, building=False, elevation=elevation)

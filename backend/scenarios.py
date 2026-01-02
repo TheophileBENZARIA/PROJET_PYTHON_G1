@@ -5,6 +5,8 @@ from .units import Knight, Crossbowman, Pikeman
 import math
 from typing import Tuple
 
+CASTLE_HP = 300
+
 def _add_sample_terrain(game_map: Map):
     """Add a few buildings and hills to the provided map for scenario testing."""
     w, h = game_map.width, game_map.height
@@ -29,6 +31,15 @@ def _add_sample_terrain(game_map: Map):
         if 0 <= x < w and 0 <= y < h:
             game_map.grid[x][y].elevation = 1 + (i % 2)
 
+def _place_castles(game_map: Map, p1_x: int, p1_y: int, p2_x: int, p2_y: int):
+    """Place castle tiles (as building dicts) at provided coordinates for both players."""
+    # Player1 castle
+    if 0 <= p1_x < game_map.width and 0 <= p1_y < game_map.height:
+        game_map.grid[p1_x][p1_y].building = {"type": "castle", "owner": "Player1", "hp": CASTLE_HP, "max_hp": CASTLE_HP}
+    # Player2 castle
+    if 0 <= p2_x < game_map.width and 0 <= p2_y < game_map.height:
+        game_map.grid[p2_x][p2_y].building = {"type": "castle", "owner": "Player2", "hp": CASTLE_HP, "max_hp": CASTLE_HP}
+
 def simple_knight_duel():
     """Creates a map with 1 Knight vs 1 Knight"""
     game_map = Map(20, 20)
@@ -47,6 +58,9 @@ def simple_knight_duel():
 
     army1.add_unit(k1)
     army2.add_unit(k2)
+
+    # place castles behind troops
+    _place_castles(game_map, 5, 1, 5, 18)
 
     return game_map, army1, army2
 
@@ -89,6 +103,9 @@ def mirrored_knight_crossbow_duel():
 
     army2.add_unit(k2)
     army2.add_unit(c2)
+
+    # place castles behind sides
+    _place_castles(game_map, game_map.width // 2, 1, game_map.width // 2, game_map.height - 2)
 
     return game_map, army1, army2
 
@@ -139,6 +156,9 @@ def mirrored_triplet_pikeman_knight_crossbow_duel():
     army2.add_unit(p2)
     army2.add_unit(k2)
     army2.add_unit(c2)
+
+    # place castles behind sides
+    _place_castles(game_map, game_map.width // 2, 1, game_map.width // 2, game_map.height - 2)
 
     return game_map, army1, army2
 
@@ -231,7 +251,9 @@ def lanchester(unit_type: str, N: int, width: int = 40, height: int = 20) -> Tup
     place_row_count(N, p1_row, "Player1", army1)
 
     # Player2 (stronger) 2*N units - place mirrored vertically around center to face Player1
-    # We will attempt to place rows starting at p2_row (which is lower than p1_row for melee/archer)
     place_row_count(2 * N, p2_row, "Player2", army2)
+
+    # place castles behind each army: behind Player1 -> nearer top; behind Player2 -> bottom
+    _place_castles(game_map, width // 2, max(0, p1_row - 2), width // 2, min(height - 1, p2_row + 2))
 
     return game_map, army1, army2

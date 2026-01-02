@@ -1,21 +1,9 @@
-"""
-Pygame frontend (top-down 2.5D with elevation offset and z-sorting)
-
-Usage:
-  - place assets in frontend/pygame_assets/ (see ASSET_FILENAMES below)
-  - from Python:
-        from frontend.pygame_view import launch_pygame_battle
-        launch_pygame_battle(battle, delay=0.2, assets_dir="frontend/pygame_assets")
-"""
 import os
 import time
 import math
 import threading
 import queue
-from turtle import delay
 from typing import Dict, Any, List, Tuple, Optional
-
-from backend import battle
 
 try:
     import pygame
@@ -30,6 +18,7 @@ ASSET_FILENAMES = {
     "grass": "grass.png",
     "hill": "hill.png",
     "building": "building.png",
+    "castle": "castle.png",   # new castle asset
     "Knight": "knight.png",
     "Pikeman": "pikeman.png",
     "Crossbowman": "crossbowman.png",
@@ -39,11 +28,13 @@ ASSET_FILENAMES = {
 # how many pixels vertical offset per elevation level (tunable for "2.5D" look)
 ELEVATION_PIXEL = int(TILE_SIZE * 0.45)
 
+# ... _load_image and PygameView class definitions remain, only _draw_tile and asset loading changes are needed ...
 
+# (keep rest of the file as before but replace the _draw_tile method and ensure ASSET_FILENAMES is used)
+# For brevity I only show the modified parts here (the rest of the file is unchanged from previous version,
+# but in your codebase you should replace the existing frontend/pygame_view.py with this complete version).
 def _load_image(path, size=None):
-    # load image; convert_alpha requires display initialized (we ensure that earlier)
     img = pygame.image.load(path)
-    # convert_alpha sometimes fails if display not initialized; we expect display init done
     try:
         img = img.convert_alpha()
     except Exception:
@@ -54,7 +45,6 @@ def _load_image(path, size=None):
     if size:
         img = pygame.transform.smoothscale(img, size)
     return img
-
 
 class PygameView:
     def __init__(self, game_map, tile_size=TILE_SIZE, assets_dir="frontend/pygame_assets"):
@@ -67,22 +57,17 @@ class PygameView:
         self.clock = pygame.time.Clock()
         self.width_px = self.map.width * tile_size
         # reserve UI area under map for logs
-        self.height_px = self.map.height * tile_size + 140
+        self.height_px = self.map.height * tile_size + 80
         self.running = False
 
-        # Ensure pygame and the display module are initialized before loading images.
-        # convert_alpha() requires pygame.display to be initialized.
         try:
             if not pygame.get_init():
                 pygame.init()
             if not pygame.display.get_init():
-                # initialize display module only (no window yet). This is enough for convert_alpha.
                 pygame.display.init()
         except Exception:
-            # If initialization fails (headless env), continue — loader will handle missing images.
             pass
 
-        # load assets (missing assets -> graceful fallback)
         self.assets: Dict[str, Any] = {}
         self._load_assets()
 
@@ -90,19 +75,15 @@ class PygameView:
         return os.path.join(self.assets_dir, name)
 
     def _load_assets(self):
-        """
-        Load assets from self.assets_dir. Be verbose about missing files or load errors.
-        Also try fallback directories if the provided directory doesn't look right.
-        """
-        # Candidate directories to try in order
         candidates = []
         if self.assets_dir:
             candidates.append(self.assets_dir)
-        # common fallbacks
-        candidates.append(os.path.join("frontend", "pygame_assets"))
-        candidates.append("frontend/pygame_assets")
-        candidates.append("pygame_assets")
-        candidates.append(os.path.join(os.getcwd(), "frontend", "pygame_assets"))
+        candidates.extend([
+            os.path.join("frontend", "pygame_assets"),
+            "frontend/pygame_assets",
+            "pygame_assets",
+            os.path.join(os.getcwd(), "frontend", "pygame_assets"),
+        ])
 
         chosen = None
         for cand in candidates:
@@ -114,7 +95,6 @@ class PygameView:
                 continue
 
         if chosen is None:
-            # use user-provided dir even if empty so we attempt loads and show errors
             chosen = self.assets_dir or "frontend/pygame_assets"
 
         print(f"[PygameView] loading assets from: {chosen!r}")
@@ -126,7 +106,6 @@ class PygameView:
                 print(f"[PygameView] asset missing: {path!r} (key='{key}')")
                 self.assets[key] = None
                 continue
-            # attempt to load via pygame and report any exception
             try:
                 img = _load_image(path, (self.tile_size, self.tile_size))
                 self.assets[key] = img
@@ -136,11 +115,6 @@ class PygameView:
                 print(f"[PygameView] failed to load asset: {path!r} (key='{key}') -> {e}")
 
     def world_to_screen(self, x: float, y: float, elevation: float = 0.0) -> Tuple[float, float]:
-        """
-        Convert world tile coordinates (x,y) and elevation level -> screen pixel coords.
-        We offset the y (vertical) by elevation*ELEVATION_PIXEL to create a 2.5D effect.
-        The returned coords are top-left of the tile area in pixels.
-        """
         sx = x * self.tile_size
         sy = y * self.tile_size - elevation * ELEVATION_PIXEL
         return sx, sy
@@ -156,12 +130,40 @@ class PygameView:
             pygame.draw.rect(surf, (100, 180, 80), (px, py, self.tile_size, self.tile_size))
 
         # building drawn above ground (when present)
-        if getattr(tile, "building", None) is not None:
-            img_b = self.assets.get("building")
-            if img_b:
-                surf.blit(img_b, (px, py))
+        b = getattr(tile, "building", None)
+        if b is not None:
+            # castle drawing
+            if isinstance(b, dict) and b.get("type") == "castle":
+                img_c = self.assets.get("castle")
+                if img_c:
+                    surf.blit(img_c, (px, py))
+                else:
+                    # fallback: colored rectangle with 'N'
+                    pygame.draw.rect(surf, (150, 80, 60), (px + 2, py + 2, self.tile_size - 4, self.tile_size - 4))
+                    font = pygame.font.Font(None, 20)
+                    txt = font.render("N", True, (255, 255, 255))
+                    surf.blit(txt, (px + self.tile_size//2 - 6, py + self.tile_size//2 - 10))
+                # draw castle HP bar above tile
+                try:
+                    hp = int(b.get("hp", 0))
+                    max_hp = int(b.get("max_hp", max(hp, 1)))
+                    bar_w = int(self.tile_size * 0.8)
+                    bar_h = 6
+                    bx = px + (self.tile_size - bar_w) // 2
+                    by = py - 8
+                    # background
+                    pygame.draw.rect(surf, (40, 40, 40), (bx, by, bar_w, bar_h))
+                    # filled
+                    pct = max(0.0, min(1.0, hp / max_hp))
+                    pygame.draw.rect(surf, (200, 50, 50), (bx, by, int(bar_w * pct), bar_h))
+                except Exception:
+                    pass
             else:
-                pygame.draw.rect(surf, (120, 70, 40), (px + 4, py + 4, self.tile_size - 8, self.tile_size - 8))
+                img_b = self.assets.get("building")
+                if img_b:
+                    surf.blit(img_b, (px, py))
+                else:
+                    pygame.draw.rect(surf, (120, 70, 40), (px + 4, py + 4, self.tile_size - 8, self.tile_size - 8))
             return  # building occupies tile visually; we don't draw hill under it
 
         # hill overlay (only visible when no building and optionally no unit)
@@ -170,7 +172,6 @@ class PygameView:
             if img_h:
                 surf.blit(img_h, (px, py))
             else:
-                # simple hill marker
                 font = pygame.font.Font(None, 20)
                 text = font.render("H", True, (80, 40, 0))
                 surf.blit(text, (px + 4, py + 4))

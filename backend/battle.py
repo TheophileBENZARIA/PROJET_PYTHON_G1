@@ -9,6 +9,8 @@ from collections import deque
 
 logger = logging.getLogger(__name__)
 
+CASTLE_HP_DEFAULT = 300
+
 @dataclass
 class BattleResult:
     winner: str
@@ -33,6 +35,9 @@ class Battle:
 
         # when True, Battle.update_units avoids printing to stdout (used when a curses display is active)
         self._suppress_stdout = False
+
+        # When a castle is destroyed we set this to the winning owner's name (string) to short-circuit the simulation
+        self._victory: Optional[str] = None
 
     # small helper to record an event (keeps messages concise)
     def add_event(self, msg: str):
@@ -99,6 +104,7 @@ class Battle:
             tile = self.map.grid[x][y]
             # building blocks sight
             if getattr(tile, "building", None) is not None:
+                # If the building in the middle is a castle, still blocks LOS
                 return False
             # hill higher than the attacker's elevation blocks sight
             try:
@@ -108,6 +114,44 @@ class Battle:
             if elev > attacker_elev:
                 return False
         return True
+
+    def _damage_castle(self, castle_tile, attacker) -> Tuple[int, str]:
+        """
+        Apply damage to castle on castle_tile by attacker Unit.
+        Returns (applied_damage, message).
+        castle_tile.building is expected to be a dict with keys: 'type'=='castle', 'hp', 'max_hp', 'owner'.
+        """
+        b = castle_tile.building
+        if not isinstance(b, dict) or b.get("type") != "castle":
+            return 0, ""
+        # compute damage similarly to Unit.attack_unit but simpler (castle armor assumed 0)
+        try:
+            bonus = attacker.compute_bonus(b) if hasattr(attacker, "compute_bonus") else 0
+        except Exception:
+            bonus = 0
+        raw = max(1, (attacker.attack + bonus) - 0)
+        # hill bonus if attacker on hill
+        hill_bonus = 0
+        try:
+            ux, uy = attacker.position
+            if 0 <= ux < self.map.width and 0 <= uy < self.map.height:
+                tile = self.map.grid[ux][uy]
+                hill_bonus = int(getattr(tile, "elevation", 0) or 0)
+        except Exception:
+            hill_bonus = 0
+        total = raw + hill_bonus
+        # apply to castle
+        b["hp"] = max(0, int(b.get("hp", 0) - total))
+        attacker.cooldown = attacker.reload_time
+        owner = b.get("owner", "Unknown")
+        msg = f"{attacker.owner}'s {attacker.unit_type()} damages {owner}'s castle for {total} dmg (castle HP={b['hp']}/{b.get('max_hp', b.get('hp', 0))})"
+        self.add_event(msg)
+        # if castle destroyed
+        if b["hp"] <= 0:
+            self.add_event(f"🏰 {owner}'s castle has been destroyed!")
+            # record victory: attacker.owner wins
+            self._victory = attacker.owner
+        return total, msg
 
     def run(self, delay: float = 0.5, display_callback: Optional[Callable[[Any], None]] = None) -> BattleResult:
         """
@@ -122,8 +166,8 @@ class Battle:
         # when a display callback is provided we suppress normal stdout prints to avoid breaking curses
         self._suppress_stdout = bool(display_callback)
 
-        # Loop until at least one army is empty
-        while (self.army1.living_units() and self.army2.living_units()):
+        # Loop until at least one army is empty or a castle is destroyed
+        while (self.army1.living_units() and self.army2.living_units()) and (self._victory is None):
             self.tick += 1
             #logger.debug("=== Tick %d starting ===", self.tick)
             if not self._suppress_stdout:
@@ -162,18 +206,22 @@ class Battle:
         self._suppress_stdout = False
 
         # determine winner
-        army1_alive = bool(self.army1.living_units())
-        army2_alive = bool(self.army2.living_units())
-
-        if army1_alive and not army2_alive:
-            winner = self.general1.name
-            print(f"\n🏆 {winner} wins after {self.tick} ticks! 🏆\n")
-        elif army2_alive and not army1_alive:
-            winner = self.general2.name
-            print(f"\n🏆 {winner} wins after {self.tick} ticks! 🏆\n")
+        if self._victory is not None:
+            winner = self._victory
+            print(f"\n🏆 {winner} wins by destroying the enemy castle after {self.tick} ticks! 🏆\n")
         else:
-            winner = "Draw"
-            print(f"\n🤝 The battle ends in a draw after {self.tick} ticks! 🤝\n")
+            army1_alive = bool(self.army1.living_units())
+            army2_alive = bool(self.army2.living_units())
+
+            if army1_alive and not army2_alive:
+                winner = self.general1.name
+                print(f"\n🏆 {winner} wins after {self.tick} ticks! 🏆\n")
+            elif army2_alive and not army1_alive:
+                winner = self.general2.name
+                print(f"\n🏆 {winner} wins after {self.tick} ticks! 🏆\n")
+            else:
+                winner = "Draw"
+                print(f"\n🤝 The battle ends in a draw after {self.tick} ticks! 🤝\n")
 
         # collect surviving units as serializable dicts
         surviving_units: Dict[str, List[Dict[str, Any]]] = {}
@@ -198,15 +246,17 @@ class Battle:
                 alive = getattr(u, "is_alive", None)
                 alive_str = alive() if callable(alive) else (hp is None or hp > 0)
                 print(f"  {uid} pos={pos} hp={hp} alive={alive_str}")
+        # show castle HP status for debugging
+        for y in range(self.map.height):
+            for x in range(self.map.width):
+                tile = self.map.grid[x][y]
+                b = getattr(tile, "building", None)
+                if isinstance(b, dict) and b.get("type") == "castle":
+                    print(f"  Castle {b.get('owner')} at ({x},{y}) HP: {b.get('hp')}/{b.get('max_hp')}")
         print("---------------------")
 
     def update_units(self):
-        """logger.debug("entered update_units tick=%d: army1=%s army2=%s",
-                     self.tick,
-                     len(self.army1.living_units()) if self.army1 else 0,
-                     len(self.army2.living_units()) if self.army2 else 0)"""
-
-        """Handle per-tick updates: cooldowns, movement (per-unit AI), then combat."""
+        """Handle per-tick updates: cooldowns, movement (per-unit AI), then combat including castles."""
         # Cooldown management
         for unit in self.army1.living_units() + self.army2.living_units():
             if unit.cooldown > 0:
@@ -223,7 +273,7 @@ class Battle:
                 logger.exception("Error during movement for unit %s", getattr(unit, "id", "<unknown>"))
                 continue
 
-        # Handle melee/ranged combat
+        # Handle melee/ranged combat (including castle targets)
         all_units = self.army1.living_units() + self.army2.living_units()
 
         for unit in all_units:
@@ -233,10 +283,19 @@ class Battle:
             # Determine the opposing army
             enemy_army = self.army2 if unit.owner == self.army1.owner else self.army1
             enemies = enemy_army.living_units()
-            if not enemies:
+            # find enemy castles (tiles)
+            enemy_castles = []
+            for x in range(self.map.width):
+                for y in range(self.map.height):
+                    tile = self.map.grid[x][y]
+                    b = getattr(tile, "building", None)
+                    if isinstance(b, dict) and b.get("type") == "castle" and b.get("owner") == enemy_army.owner:
+                        enemy_castles.append((x, y, tile))
+
+            if not enemies and not enemy_castles:
                 continue
 
-            # Find all enemies within attack range
+            # Find all enemies within attack range (units and castles)
             enemies_in_range = []
             try:
                 ux, uy = unit.position
@@ -245,6 +304,7 @@ class Battle:
                 ux = uy = None
                 unit_elev = 0
 
+            # units first
             for e in enemies:
                 if not e.position:
                     continue
@@ -263,7 +323,7 @@ class Battle:
                 if (unit.range <= 1) and (target_elev > unit_elev):
                     continue
 
-                #For melee, also require line-of-sight (no taller hill/building between)
+                # For melee, also require line-of-sight (no taller hill/building between)
                 if unit.range <= 1:
                     try:
                         if not self._has_line_of_sight((ux, uy), (tx, ty), unit_elev):
@@ -276,40 +336,69 @@ class Battle:
 
                 enemies_in_range.append(e)
 
+            # castles
+            for (cx, cy, c_tile) in enemy_castles:
+                # Manhattan distance
+                dist = abs(ux - cx) + abs(uy - cy)
+                if dist > unit.range:
+                    continue
+                # hill/LOS restrictions for melee same as unit
+                if unit.range <= 1:
+                    try:
+                        if not self._has_line_of_sight((ux, uy), (cx, cy), unit_elev):
+                            continue
+                    except Exception:
+                        continue
+                # represent castle by tuple ('castle', cx, cy, tile)
+                enemies_in_range.append(("castle", cx, cy, c_tile))
+
             if not enemies_in_range:
                 continue
 
+            # helper for choosing nearest (works for unit or castle tuple)
+            def _dist_to_obj(obj):
+                if isinstance(obj, tuple) and obj and obj[0] == "castle":
+                    _, cx, cy, _ = obj
+                    return abs(ux - cx) + abs(uy - cy)
+                else:
+                    return self.distance(unit, obj)
+
             # Choose the nearest enemy to attack
-            target = min(enemies_in_range, key=lambda e: self.distance(unit, e))
+            target = min(enemies_in_range, key=_dist_to_obj)
 
             # Attack if cooldown allows
             if unit.can_attack():
-                # pass game_map to attack_unit so units (e.g. Crossbowman) can use tile info (hills)
-                res = unit.attack_unit(target, game_map=self.map)
-                if isinstance(res, tuple):
-                    applied, msg = res
+                if isinstance(target, tuple) and target and target[0] == "castle":
+                    # castle attack
+                    _, cx, cy, c_tile = target
+                    applied, msg = self._damage_castle(c_tile, unit)
+                    # if castle destroyed, the _damage_castle already set self._victory
                 else:
-                    applied, msg = res, None
+                    # pass game_map to attack_unit so units (e.g. Crossbowman) can use tile info (hills)
+                    res = unit.attack_unit(target, game_map=self.map)
+                    if isinstance(res, tuple):
+                        applied, msg = res
+                    else:
+                        applied, msg = res, None
 
-                """logger.debug("%s attacked %s for %s dmg (target hp=%s)",
-                             getattr(unit, "unit_type", lambda: "unit")(),
-                             getattr(target, "unit_type", lambda: "unit")(),
-                             applied,
-                             getattr(target, "hp", None))"""
-
-                # Build an event message: prefer explicit msg from unit, otherwise synthesize
-                if msg:
-                    self.add_event(msg)
-                else:
-                    self.add_event(f"{unit.owner}'s {unit.unit_type()} attacks {target.owner}'s {target.unit_type()} for {applied} dmg (HP={target.hp})")
+                    # Build an event message: prefer explicit msg from unit, otherwise synthesize
+                    if msg:
+                        self.add_event(msg)
+                    else:
+                        self.add_event(f"{unit.owner}'s {unit.unit_type()} attacks {target.owner}'s {target.unit_type()} for {applied} dmg (HP={target.hp})")
 
             # If the target dies, remove it immediately and log
-            if not target.is_alive():
-                self.remove_unit(target)
-                #logger.debug("%s died (owner=%s)", getattr(target, "unit_type", lambda: "unit")(), target.owner)
-                self.add_event(f"💀 {target.owner}'s {target.unit_type()} has died!")
+            if not (isinstance(target, tuple) and target and target[0] == "castle"):
+                # normal unit death handling
+                if not target.is_alive():
+                    self.remove_unit(target)
+                    self.add_event(f"💀 {target.owner}'s {target.unit_type()} has died!")
 
-        # 4) Defensive cleanup (in case of simultaneous deaths)
+            # If castle destroyed, we can stop further processing this tick (victory flag set)
+            if self._victory is not None:
+                return
+
+        # Defensive cleanup (in case of simultaneous deaths)
         for army in [self.army1, self.army2]:
             army.units = army.living_units()
 

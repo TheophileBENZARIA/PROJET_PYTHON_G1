@@ -23,9 +23,8 @@ class PyScreen :
         self.screen.fill(self.BLUE)
 
     def handle_input(self):
+        pygame.event.get()
         keys = pygame.key.get_pressed()
-        print(keys)
-
         # Déplacement avec les flèches
         if keys[pygame.K_LEFT]:
             self.offset_x += 30

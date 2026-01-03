@@ -20,8 +20,11 @@ class PyScreen :
         pygame.display.set_caption("Vue Isométrique avec PNG Carré")
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
 
+        self.screen.fill(self.BLUE)
+
     def handle_input(self):
         keys = pygame.key.get_pressed()
+        print(keys)
 
         # Déplacement avec les flèches
         if keys[pygame.K_LEFT]:
@@ -53,6 +56,7 @@ class PyScreen :
 
                 # Afficher l'image (tuile carrée transformée)
                 self.screen.blit(tile_image, rect.topleft)
+        pygame.display.flip()
 
     def init(self):
         pass

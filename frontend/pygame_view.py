@@ -28,11 +28,6 @@ ASSET_FILENAMES = {
 # how many pixels vertical offset per elevation level (tunable for "2.5D" look)
 ELEVATION_PIXEL = int(TILE_SIZE * 0.45)
 
-# ... _load_image and PygameView class definitions remain, only _draw_tile and asset loading changes are needed ...
-
-# (keep rest of the file as before but replace the _draw_tile method and ensure ASSET_FILENAMES is used)
-# For brevity I only show the modified parts here (the rest of the file is unchanged from previous version,
-# but in your codebase you should replace the existing frontend/pygame_view.py with this complete version).
 def _load_image(path, size=None):
     img = pygame.image.load(path)
     try:

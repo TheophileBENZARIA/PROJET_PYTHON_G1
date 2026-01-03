@@ -24,11 +24,60 @@ class Unit(ABC):
         self.bonuses = bonuses if bonuses else {}
         self.cooldown = 0
 
-        # per-unit "order" set by the general each tick: usually a reference to an enemy unit
+        # per-unit "order" set by the general each tick:  usually a reference to an enemy unit
         self.current_target = None  # Optional[Unit]
+
+        # Threat tracking:  remembers who attacked this unit and from where
+        # Format: {"attacker_id": {"unit":  Unit, "last_known_pos": (x, y), "tick": int}}
+        self.threat_memory: Dict[str, Dict[str, Any]] = {}
 
     def is_alive(self) -> bool:
         return self.hp > 0
+
+    def register_threat(self, attacker: "Unit", attacker_pos: Tuple[int, int], tick: int):
+        """
+        Register an attacker as a threat.  Stores the attacker reference and their
+        position at the time of attack.  This allows units to track and pursue
+        enemies that attacked them from range.
+        """
+        if attacker is None or attacker_pos is None:
+            return
+        self.threat_memory[attacker.id] = {
+            "unit": attacker,
+            "last_known_pos": tuple(attacker_pos),
+            "tick": tick
+        }
+        logger.debug("%s registered threat from %s at %s (tick %d)",
+                     self.unit_type(), attacker.unit_type(), attacker_pos, tick)
+
+    def get_priority_threat(self) -> Optional["Unit"]:
+        """
+        Returns the most recent living attacker from threat memory.
+        Cleans up dead attackers from memory.
+        """
+        # Clean up dead attackers
+        dead_ids = [aid for aid, info in self.threat_memory.items()
+                    if not info["unit"].is_alive()]
+        for aid in dead_ids:
+            del self.threat_memory[aid]
+
+        if not self.threat_memory:
+            return None
+
+        # Return the most recently registered threat (highest tick)
+        most_recent = max(self.threat_memory.values(), key=lambda x: x["tick"])
+        return most_recent["unit"]
+
+    def get_threat_last_known_pos(self, attacker_id: str) -> Optional[Tuple[int, int]]:
+        """Get the last known position of a specific attacker."""
+        if attacker_id in self.threat_memory:
+            return self.threat_memory[attacker_id]["last_known_pos"]
+        return None
+
+    def clear_threat(self, attacker_id: str):
+        """Remove a specific attacker from threat memory (e.g., after killing them)."""
+        if attacker_id in self.threat_memory:
+            del self.threat_memory[attacker_id]
 
     def take_damage(self, dmg: int):
         # shared damage application (considers armor)
@@ -75,6 +124,15 @@ class Unit(ABC):
         pass
 
     def to_dict(self) -> Dict[str, Any]:
+        # Serialize threat memory (only store IDs and positions, not unit references)
+        threat_data = {}
+        for aid, info in self.threat_memory.items():
+            threat_data[aid] = {
+                "attacker_id": aid,
+                "last_known_pos": list(info["last_known_pos"]) if info["last_known_pos"] else None,
+                "tick": info["tick"]
+            }
+
         return {
             "id": self.id,
             "owner": self.owner,
@@ -86,9 +144,10 @@ class Unit(ABC):
             "reload_time": self.reload_time,
             "position": list(self.position) if self.position is not None else None,
             "cooldown": self.cooldown,
-            "classes":  self.classes,
-            "bonuses":  self.bonuses,
+            "classes": self.classes,
+            "bonuses": self.bonuses,
             "unit_type": self.unit_type(),
+            "threat_memory": threat_data,
         }
 
     @classmethod
@@ -103,7 +162,7 @@ class Unit(ABC):
         elif unit_type == "Crossbowman":
             unit = Crossbowman(owner, id=data.get("id"))
         else:
-            # Fallback: basic Unit-like object via generic subclass
+            # Fallback:  basic Unit-like object via generic subclass
             raise ValueError(f"Unknown unit_type: {unit_type}")
 
         # restore mutable state
@@ -111,6 +170,8 @@ class Unit(ABC):
         unit.cooldown = data.get("cooldown", 0)
         pos = data.get("position")
         unit.position = tuple(pos) if pos is not None else None
+        # Note: threat_memory restoration requires access to other units,
+        # which is handled at a higher level (Battle.from_dict)
         return unit
 
 
@@ -129,7 +190,8 @@ class Knight(Unit):
 class Pikeman(Unit):
     def __init__(self, owner: str, id: Optional[str] = None):
         super().__init__(owner, hp=55, attack=4, armor=0,
-                         speed=1, range_=1, reload_time=3, classes=["Infantry", "Spear"], bonuses={"Cavalry": 10}, id=id)
+                         speed=1, range_=1, reload_time=3, classes=["Infantry", "Spear"], bonuses={"Cavalry": 10},
+                         id=id)
 
     def unit_type(self) -> str:
         return "Pikeman"
@@ -139,7 +201,8 @@ class Crossbowman(Unit):
     def __init__(self, owner: str, id: Optional[str] = None):
         # longer range, slower reload, decent attack
         super().__init__(owner, hp=35, attack=6, armor=0,
-                         speed=1, range_=5, reload_time=3, classes=["Archer"], bonuses={"Spear": 3, "Building": 0}, id=id)
+                         speed=1, range_=5, reload_time=3, classes=["Archer"], bonuses={"Spear": 3, "Building": 0},
+                         id=id)
 
     def unit_type(self) -> str:
         return "Crossbowman"
@@ -195,5 +258,5 @@ class Crossbowman(Unit):
         else:
             msg = f"{self.owner}'s {self.unit_type()} shoots {target.owner}'s {target.unit_type()} for {applied} dmg (HP={target.hp})"
 
-        #logger.debug("%s", msg)
+        # logger. debug("%s", msg)
         return applied, msg

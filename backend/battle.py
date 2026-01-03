@@ -33,7 +33,7 @@ class Battle:
         # Terminal UI will read this and display a compact battle log.
         self.event_log = deque(maxlen=200)
 
-        # when True, Battle.update_units avoids printing to stdout (used when a curses display is active)
+        # when True, Battle. update_units avoids printing to stdout (used when a curses display is active)
         self._suppress_stdout = False
 
         # When a castle is destroyed we set this to the winning owner's name (string) to short-circuit the simulation
@@ -49,8 +49,8 @@ class Battle:
         if not self._suppress_stdout:
             print(entry)
 
-    # --- NEW helper: Bresenham + LOS check ---
-    def _bresenham_line(self, a: Tuple[int,int], b: Tuple[int,int]) -> List[Tuple[int,int]]:
+    # --- NEW helper:  Bresenham + LOS check ---
+    def _bresenham_line(self, a: Tuple[int, int], b: Tuple[int, int]) -> List[Tuple[int, int]]:
         """
         Return the integer grid cells on a line from a to b (including endpoints).
         Standard Bresenham integer algorithm.
@@ -78,7 +78,8 @@ class Battle:
                 y0 += sy
         return points
 
-    def _has_line_of_sight(self, attacker_pos: Tuple[int,int], target_pos: Tuple[int,int], attacker_elev: int) -> bool:
+    def _has_line_of_sight(self, attacker_pos: Tuple[int, int], target_pos: Tuple[int, int],
+                           attacker_elev: int) -> bool:
         """
         Return True if attacker at attacker_pos (with elevation attacker_elev) can see target_pos.
         LOS is blocked if any intermediate tile (exclusive of endpoints) has:
@@ -119,12 +120,12 @@ class Battle:
         """
         Apply damage to castle on castle_tile by attacker Unit.
         Returns (applied_damage, message).
-        castle_tile.building is expected to be a dict with keys: 'type'=='castle', 'hp', 'max_hp', 'owner'.
+        castle_tile. building is expected to be a dict with keys:  'type'=='castle', 'hp', 'max_hp', 'owner'.
         """
         b = castle_tile.building
         if not isinstance(b, dict) or b.get("type") != "castle":
             return 0, ""
-        # compute damage similarly to Unit.attack_unit but simpler (castle armor assumed 0)
+        # compute damage
         try:
             bonus = attacker.compute_bonus(b) if hasattr(attacker, "compute_bonus") else 0
         except Exception:
@@ -148,8 +149,8 @@ class Battle:
         self.add_event(msg)
         # if castle destroyed
         if b["hp"] <= 0:
-            self.add_event(f"🏰 {owner}'s castle has been destroyed!")
-            # record victory: attacker.owner wins
+            self.add_event(f"{owner}'s castle has been destroyed!")
+            # record victory:  attacker.owner wins
             self._victory = attacker.owner
         return total, msg
 
@@ -158,7 +159,7 @@ class Battle:
         Run the battle until one/both armies are destroyed (no artificial tick cap).
         - delay: seconds to sleep after each tick (set to 0 for headless).
         - display_callback: optional function(game_map) called after update_units each tick to
-            update any external display (e.g. curses). If the callback raises KeyboardInterrupt,
+            update any external display (e.g.  curses). If the callback raises KeyboardInterrupt,
             the battle will stop gracefully.
         Returns:
             BattleResult(winner, surviving_units, ticks)
@@ -169,7 +170,7 @@ class Battle:
         # Loop until at least one army is empty or a castle is destroyed
         while (self.army1.living_units() and self.army2.living_units()) and (self._victory is None):
             self.tick += 1
-            #logger.debug("=== Tick %d starting ===", self.tick)
+            # logger.debug("=== Tick %d starting ===", self. tick)
             if not self._suppress_stdout:
                 print(f"\n--- Tick {self.tick} ---")
 
@@ -177,12 +178,10 @@ class Battle:
             self.general1.issue_orders(self.army1, self.army2, self.map)
             self.general2.issue_orders(self.army2, self.army1, self.map)
 
-            #logger.debug("About to call update_units (tick=%d)", self.tick)
 
             # update game state (movement, attacks, cooldowns, death cleanup)
             self.update_units()
 
-            #logger.debug("Returned from update_units (tick=%d)", self.tick)
 
             # If provided, call the display callback so an external UI can update.
             if display_callback:
@@ -208,20 +207,20 @@ class Battle:
         # determine winner
         if self._victory is not None:
             winner = self._victory
-            print(f"\n🏆 {winner} wins by destroying the enemy castle after {self.tick} ticks! 🏆\n")
+            print(f"\n {winner} wins by destroying the enemy castle after {self.tick} ticks! \n")
         else:
             army1_alive = bool(self.army1.living_units())
             army2_alive = bool(self.army2.living_units())
 
             if army1_alive and not army2_alive:
                 winner = self.general1.name
-                print(f"\n🏆 {winner} wins after {self.tick} ticks! 🏆\n")
+                print(f"\n{winner} wins after {self.tick} ticks!\n")
             elif army2_alive and not army1_alive:
                 winner = self.general2.name
-                print(f"\n🏆 {winner} wins after {self.tick} ticks! 🏆\n")
+                print(f"\n{winner} wins after {self.tick} ticks!\n")
             else:
                 winner = "Draw"
-                print(f"\n🤝 The battle ends in a draw after {self.tick} ticks! 🤝\n")
+                print(f"\nThe battle ends in a draw after {self.tick} ticks!\n")
 
         # collect surviving units as serializable dicts
         surviving_units: Dict[str, List[Dict[str, Any]]] = {}
@@ -235,7 +234,7 @@ class Battle:
         print(f"--- Tick {self.tick} ---")
         for side_name, army in (("Player1", getattr(self, "army1", None)), ("Player2", getattr(self, "army2", None))):
             if army is None:
-                print(f"{side_name}: <no army>")
+                print(f"{side_name}:  <no army>")
                 continue
             units = getattr(army, "units", None) or getattr(army, "soldiers", None) or []
             print(f"{side_name} units: {len(units)}")
@@ -245,18 +244,20 @@ class Battle:
                 hp = getattr(u, "hp", getattr(u, "health", getattr(u, "hitpoints", None)))
                 alive = getattr(u, "is_alive", None)
                 alive_str = alive() if callable(alive) else (hp is None or hp > 0)
-                print(f"  {uid} pos={pos} hp={hp} alive={alive_str}")
+                # Show threat count for debugging
+                threat_count = len(getattr(u, "threat_memory", {}))
+                print(f"  {uid} pos={pos} hp={hp} alive={alive_str} threats={threat_count}")
         # show castle HP status for debugging
         for y in range(self.map.height):
             for x in range(self.map.width):
                 tile = self.map.grid[x][y]
                 b = getattr(tile, "building", None)
                 if isinstance(b, dict) and b.get("type") == "castle":
-                    print(f"  Castle {b.get('owner')} at ({x},{y}) HP: {b.get('hp')}/{b.get('max_hp')}")
+                    print(f"  Castle {b.get('owner')} at ({x},{y}) HP:  {b.get('hp')}/{b.get('max_hp')}")
         print("---------------------")
 
     def update_units(self):
-        """Handle per-tick updates: cooldowns, movement (per-unit AI), then combat including castles."""
+        """Handle per-tick updates:  cooldowns, movement (per-unit AI), then combat including castles."""
         # Cooldown management
         for unit in self.army1.living_units() + self.army2.living_units():
             if unit.cooldown > 0:
@@ -299,7 +300,8 @@ class Battle:
             enemies_in_range = []
             try:
                 ux, uy = unit.position
-                unit_elev = int(getattr(self.map.grid[ux][uy], "elevation", 0) or 0) if (0 <= ux < self.map.width and 0 <= uy < self.map.height) else 0
+                unit_elev = int(getattr(self.map.grid[ux][uy], "elevation", 0) or 0) if (
+                            0 <= ux < self.map.width and 0 <= uy < self.map.height) else 0
             except Exception:
                 ux = uy = None
                 unit_elev = 0
@@ -315,7 +317,8 @@ class Battle:
                 # determine target elevation
                 try:
                     tx, ty = e.position
-                    target_elev = int(getattr(self.map.grid[tx][ty], "elevation", 0) or 0) if (0 <= tx < self.map.width and 0 <= ty < self.map.height) else 0
+                    target_elev = int(getattr(self.map.grid[tx][ty], "elevation", 0) or 0) if (
+                                0 <= tx < self.map.width and 0 <= ty < self.map.height) else 0
                 except Exception:
                     target_elev = 0
 
@@ -368,31 +371,47 @@ class Battle:
 
             # Attack if cooldown allows
             if unit.can_attack():
+                # Store attacker position BEFORE attack for threat tracking
+                attacker_pos = tuple(unit.position) if unit.position else None
+
                 if isinstance(target, tuple) and target and target[0] == "castle":
                     # castle attack
                     _, cx, cy, c_tile = target
                     applied, msg = self._damage_castle(c_tile, unit)
                     # if castle destroyed, the _damage_castle already set self._victory
                 else:
-                    # pass game_map to attack_unit so units (e.g. Crossbowman) can use tile info (hills)
+                    # pass game_map to attack_unit so units (e.g.  Crossbowman) can use tile info (hills)
                     res = unit.attack_unit(target, game_map=self.map)
                     if isinstance(res, tuple):
                         applied, msg = res
                     else:
                         applied, msg = res, None
 
-                    # Build an event message: prefer explicit msg from unit, otherwise synthesize
+                    # THREAT TRACKING:  Register the attacker in the target's threat memory
+                    # This happens regardless of damage (even on miss, target knows where shot came from)
+                    if attacker_pos is not None and hasattr(target, 'register_threat'):
+                        target.register_threat(unit, attacker_pos, self.tick)
+                        logger.debug("Threat registered:  %s's %s attacked %s's %s from %s",
+                                     unit.owner, unit.unit_type(), target.owner, target.unit_type(), attacker_pos)
+
+                    # Build an event message:  prefer explicit msg from unit, otherwise synthesize
                     if msg:
                         self.add_event(msg)
                     else:
-                        self.add_event(f"{unit.owner}'s {unit.unit_type()} attacks {target.owner}'s {target.unit_type()} for {applied} dmg (HP={target.hp})")
+                        self.add_event(
+                            f"{unit.owner}'s {unit.unit_type()} attacks {target.owner}'s {target.unit_type()} for {applied} dmg (HP={target.hp})")
 
             # If the target dies, remove it immediately and log
             if not (isinstance(target, tuple) and target and target[0] == "castle"):
                 # normal unit death handling
                 if not target.is_alive():
                     self.remove_unit(target)
-                    self.add_event(f"💀 {target.owner}'s {target.unit_type()} has died!")
+                    self.add_event(f"{target.owner}'s {target.unit_type()} has died!")
+
+                    # Clear the dead unit from all threat memories
+                    for u in self.army1.living_units() + self.army2.living_units():
+                        if hasattr(u, 'clear_threat'):
+                            u.clear_threat(target.id)
 
             # If castle destroyed, we can stop further processing this tick (victory flag set)
             if self._victory is not None:
@@ -424,9 +443,10 @@ class Battle:
     def to_dict(self) -> dict:
         """
         Return a JSON-serializable representation of this Battle.
-        Delegates to .to_dict() on sub-objects (map, armies, generals) if available.
+        Delegates to . to_dict() on sub-objects (map, armies, generals) if available.
         Raises TypeError with a helpful message if a sub-object is not serializable.
         """
+
         def _serialize(obj):
             if obj is None or isinstance(obj, (str, int, float, bool)):
                 return obj
@@ -452,8 +472,8 @@ class Battle:
     def from_dict(cls, data: dict):
         """
         Recreate a Battle from a dict produced by Battle.to_dict().
-        Handles Army.from_dict signatures that require a `units_by_id` dict by
-        attempting to reconstruct units first using backend.units.Unit.from_dict.
+        Handles Army. from_dict signatures that require a `units_by_id` dict by
+        attempting to reconstruct units first using backend.units. Unit.from_dict.
         """
         import inspect
 
@@ -474,12 +494,12 @@ class Battle:
                 else:
                     return cls_type.from_dict(obj_data)
             except (TypeError, ValueError, AttributeError):
-                # Fallback: try calling with single arg
+                # Fallback:  try calling with single arg
                 try:
                     return cls_type.from_dict(obj_data)
                 except Exception as e:
                     raise TypeError(
-                        f"Cannot restore {label}: failed to call {cls_type.__name__}.from_dict -> {e}") from e
+                        f"Cannot restore {label}:  failed to call {cls_type.__name__}. from_dict -> {e}") from e
 
         # import component classes
         try:
@@ -503,7 +523,7 @@ class Battle:
 
         # Prepare units_by_id mapping if Army.from_dict expects it.
         units_by_id = {}
-        # Try to load Unit.from_dict if present
+        # Try to load Unit. from_dict if present
         UnitClass = None
         try:
             from backend.units import Unit as UnitClass
@@ -537,7 +557,7 @@ class Battle:
                     # skip units we can't reconstruct here; Army.from_dict should tolerate missing ones or raise
                     continue
 
-        # restore map (require Map.from_dict if a map was saved
+        # restore map (require Map. from_dict if a map was saved
         if MapClass is None or not hasattr(MapClass, "from_dict"):
             if data.get("map") is not None:
                 raise TypeError(

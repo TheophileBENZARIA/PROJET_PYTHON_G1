@@ -13,7 +13,7 @@ class PyScreen :
         self.tile_size = 128  # Taille d'une tuile carrée
 
         # Charger l'image de la tuile PNG (image carrée)
-        self.TILE_IMAGE = pygame.image.load("tile.png")  # Remplace "ton_image.png" par ton fichier PNG
+        self.TILE_IMAGE = pygame.image.load("../pygame_assets/tile.png")  # Remplace "ton_image.png" par ton fichier PNG
         # Position initiale pour le déplacement
 
         pygame.init()

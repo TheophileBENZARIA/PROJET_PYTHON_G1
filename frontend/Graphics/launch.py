@@ -8,7 +8,6 @@ running = True
 while running:
 
     scr.handle_input()
-    scr.screen.fill(scr.BLUE)
     scr.draw()
 
 scr.quit()

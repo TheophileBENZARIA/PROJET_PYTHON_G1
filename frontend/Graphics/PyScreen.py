@@ -4,15 +4,15 @@ class PyScreen :
     def __init__(self):
         self.WIDTH, self.HEIGHT = 1920, 1080
         self.offset_x, self.offset_y = 0, 0
-        # Couleurs
         self.zoom_factor = 3
 
         # Paramètres de la vue isométrique
         self.tile_size = 128  # Taille d'une tuile carrée
 
         # Charger l'image de la tuile PNG (image carrée)
-        self.TILE_IMAGE = pygame.image.load("../pygame_assets/tile.png")  # Remplace "ton_image.png" par ton fichier PNG
-        # Position initiale pour le déplacement
+        self.TILE_IMAGE = pygame.image.load("../pygame_assets/tile.png")
+
+        self.KNIGHT_IMAGE = pygame.image.load("../pygame_assets/knight.png")
 
         pygame.init()
         pygame.display.set_caption("Vue Isométrique avec PNG Carré")
@@ -42,7 +42,7 @@ class PyScreen :
 
         if keys[pygame.K_ESCAPE]: quit()
 
-    def draw(self):
+    def draw(self, entitylist: list[dict]):
         self.screen.fill((0,0,0))
         tile_image = pygame.transform.scale(self.TILE_IMAGE, (self.tile_size * self.zoom_factor, self.tile_size * self.zoom_factor))
         for x in range(-5, 5):  # De -5 à 5 pour une taille de carte de 10x10
@@ -54,6 +54,38 @@ class PyScreen :
 
                 # Afficher l'image (tuile carrée transformée)
                 self.screen.blit(tile_image, rect.topleft)
+
+        for entity in entitylist :
+            iso_coor = self.convert_to_iso(entity["coor"])
+
+            if entity["type"] is "Knight":
+                tile_image = pygame.transform.scale(self.KNIGHT_IMAGE, (self.tile_size * self.zoom_factor,
+                                                                      self.tile_size * self.zoom_factor))
+            rect = tile_image.get_rect(center=iso_coor)
+            self.screen.blit(tile_image, rect.topleft)
+
+            bar_width = 40 / self.zoom_factor
+            bar_height = 6 / self.zoom_factor
+            bar_x = iso_coor[0]
+            bar_y = iso_coor[1] - 100/self.zoom_factor  # au-dessus de l'ennemi
+
+            # Fond (rouge)
+            pygame.draw.rect(
+                self.screen,
+                (255, 0, 0),
+                (bar_x, bar_y, bar_width, bar_height)
+            )
+
+            # Vie actuelle (verte)
+            health_ratio = entity["health"] / entity["max_health"]
+            pygame.draw.rect(
+                self.screen,
+                (0, 255, 0),
+                (bar_x, bar_y, bar_width * health_ratio, bar_height)
+            )
+
+
+
         pygame.display.flip()
 
     def init(self):

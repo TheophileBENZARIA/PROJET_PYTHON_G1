@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 import curses
 from .Screen import Screen
 from .UniteTerm import UniteTerm, from_tile
@@ -106,6 +106,7 @@ def curses_placement_editor(game_map):
     try:
         return curses.wrapper(main)
     except KeyboardInterrupt:
+
 =======
 import curses
 from .Screen import Screen
@@ -214,5 +215,5 @@ def curses_placement_editor(game_map):
     try:
         return curses.wrapper(main)
     except KeyboardInterrupt:
->>>>>>> 71325c1 (Initial commit)
+
         return {t: [] for t in UNIT_TYPES}

@@ -492,7 +492,13 @@ def main():
     dest="use_curses",
     help="Use curses interface for placement"
     )
-
+    
+    place_parser.add_argument(
+    "--pygame",
+    action="store_true",
+    dest="use_pygame",
+    help="Use pygame interface for placement"
+    )
 
     args = parser.parse_args()
 
@@ -563,25 +569,48 @@ def main():
                 if choice2.lower().startswith("y"):
                     choose_save_method_and_save(battle)
 
+    
     elif args.mode == "place":
-        from frontend.Terminal.placement import curses_placement_editor
 
-        print("Opening placement editor...")
-        base_map = Map(20,20)
+        base_map = Map(20, 20)
         _place_default_terrain(base_map)
 
-        positions = curses_placement_editor(base_map)
+        # decide which placement interface to use
+        if args.use_pygame:
+            from frontend.pygame_placement import pygame_placement_editor
+            from frontend.pygame_view import PygameView
+        
+            # load assets
+            viewer = PygameView(base_map)
+            assets = viewer.assets
+
+            positions = pygame_placement_editor(base_map, assets)
+
+        else:
+            from frontend.Terminal.placement import curses_placement_editor
+            positions = curses_placement_editor(base_map)
+
+        if positions is None:
+            print("Placement cancelled.")
+            return
 
         print("Building armies...")
         game_map, army1, army2 = build_mirrored_battle_from_custom_positions(positions)
 
-        general1 = CaptainBraindead()
-        general2 = MajorDaft()
-        battle = Battle(game_map, army1, general1, army2, general2)
+        battle = Battle(
+            game_map,
+            army1, CaptainBraindead(),
+            army2, MajorDaft()
+        )
 
         print("Launching battle...")
-        launch_curses_battle(battle)
 
+        if args.use_pygame:
+            launch_pygame_battle(battle)
+        else:
+            launch_curses_battle(battle)
+    
+    
     else:
         parser.print_help()
 

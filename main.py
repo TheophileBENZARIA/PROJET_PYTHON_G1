@@ -585,7 +585,7 @@ def main():
             assets = viewer.assets
 
             positions = pygame_placement_editor(base_map, assets)
-
+            positions = {k.lower(): v for k, v in positions.items()}
         else:
             from frontend.Terminal.placement import curses_placement_editor
             positions = curses_placement_editor(base_map)

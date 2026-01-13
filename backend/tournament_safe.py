@@ -111,3 +111,4 @@ generate_pdf_report(results, victories, pdf_path)
 
 print(f"Rapport PDF généré : {pdf_path}")
 
+

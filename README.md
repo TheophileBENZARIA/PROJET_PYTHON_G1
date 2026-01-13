@@ -10,7 +10,7 @@ python main. py run --pygame --delay 0.3
 With curses display
 python main. py run --curses --delay 0.5
 
-# Fast headless run
+Fast headless run
 python main.py run --delay 0
 
 2. Tournament Mode

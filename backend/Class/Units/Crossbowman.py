@@ -1,10 +1,12 @@
-import Unit
+from Unit import Unit
+from backend.Class.Army import Army
+
+
 class Crossbowman(Unit):
-    def __init__(self, owner: str, id: Optional[str] = None):
+    def __init__(self, army: Army, position: tuple[float]):
         # longer range, slower reload, decent attack
-        super().__init__(owner, hp=35, attack=6, armor=0,
-                         speed=1, range_=5, reload_time=3, classes=["Archer"], bonuses={"Spear": 3, "Building": 0},
-                         id=id)
+        super().__init__(army, hp=35, attack=6, armor=0,
+                         speed=1, range_=5, reload_time=3,position=position, classes=["Archer"], bonuses={"Spear": 3, "Building": 0},)
 
     def unit_type(self) -> str:
         return "Crossbowman"

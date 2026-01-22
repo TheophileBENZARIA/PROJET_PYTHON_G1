@@ -5,41 +5,56 @@ from typing import Optional, Dict, Any, Tuple
 import random
 import logging
 
+from backend.Class.Army import Army
+
 logger = logging.getLogger(__name__)
 
 
 class Unit(ABC):
-    def __init__(self, owner: str, hp: int, attack: int, armor: int,
-                 speed: int, range_: int, reload_time: int, classes=None, bonuses=None, id: Optional[str] = None):
-        self.id = id or str(uuid.uuid4())
-        self.owner = owner
+
+
+    def __init__(self, army: Army, hp: int, attack: int, armor: int,
+                 speed: int, range_: int, reload_time: int,position: tuple[float]= None, classes=None, bonuses=None):
+
+
+        self.__id = str(uuid.uuid4())
+        self.army = army
+
         self.hp = hp
         self.attack = attack
         self.armor = armor
         self.speed = speed
         self.range = range_
-        self.reload_time = reload_time
-        self.position = None  # (x, y) or None
+        self.position = position  # (x, y) or None
         self.classes = classes if classes else []
         self.bonuses = bonuses if bonuses else {}
-        self.cooldown = 0
+        self.reload_time = reload_time #le temps qu'il faut entre 2 attaques
+        self.cooldown = 0 #le temps necessaire qu'il reste à attendre pour la prochaine attaque
 
+    @property #id est un argument privé cela permet de créer un getter
+    def id(self) :
+        return self.__id
+
+    def is_alive(self) -> bool:
+        return self.hp > 0
+
+"""
+    # Dans le init ---------------------------------------
         # per-unit "order" set by the general each tick:  usually a reference to an enemy unit
         self.current_target = None  # Optional[Unit]
 
         # Threat tracking:  remembers who attacked this unit and from where
         # Format: {"attacker_id": {"unit":  Unit, "last_known_pos": (x, y), "tick": int}}
         self.threat_memory: Dict[str, Dict[str, Any]] = {}
-
-    def is_alive(self) -> bool:
-        return self.hp > 0
+    # -------------------------------------------------------
+    
+    
 
     def register_threat(self, attacker: "Unit", attacker_pos: Tuple[int, int], tick: int):
-        """
-        Register an attacker as a threat.  Stores the attacker reference and their
-        position at the time of attack.  This allows units to track and pursue
-        enemies that attacked them from range.
-        """
+        # Register an attacker as a threat.  Stores the attacker reference and their
+        # position at the time of attack.  This allows units to track and pursue
+        # enemies that attacked them from range.
+        
         if attacker is None or attacker_pos is None:
             return
         self.threat_memory[attacker.id] = {
@@ -51,10 +66,10 @@ class Unit(ABC):
                      self.unit_type(), attacker.unit_type(), attacker_pos, tick)
 
     def get_priority_threat(self) -> Optional["Unit"]:
-        """
-        Returns the most recent living attacker from threat memory.
-        Cleans up dead attackers from memory.
-        """
+        
+        # Returns the most recent living attacker from threat memory.
+        # Cleans up dead attackers from memory.
+
         # Clean up dead attackers
         dead_ids = [aid for aid, info in self.threat_memory.items()
                     if not info["unit"].is_alive()]
@@ -69,13 +84,13 @@ class Unit(ABC):
         return most_recent["unit"]
 
     def get_threat_last_known_pos(self, attacker_id: str) -> Optional[Tuple[int, int]]:
-        """Get the last known position of a specific attacker."""
+        # Get the last known position of a specific attacker.
         if attacker_id in self.threat_memory:
             return self.threat_memory[attacker_id]["last_known_pos"]
         return None
 
     def clear_threat(self, attacker_id: str):
-        """Remove a specific attacker from threat memory (e.g., after killing them)."""
+        # Remove a specific attacker from threat memory (e.g., after killing them).
         if attacker_id in self.threat_memory:
             del self.threat_memory[attacker_id]
 
@@ -96,7 +111,7 @@ class Unit(ABC):
         self.cooldown = self.reload_time
 
     def compute_bonus(self, target) -> int:
-        """Return the attack bonuses against the target based on its classes."""
+        #Return the attack bonuses against the target based on its classes.
         total = 0
         for cls in target.classes:
             if cls in self.bonuses:
@@ -105,11 +120,11 @@ class Unit(ABC):
 
     @abstractmethod
     def attack_unit(self, target, game_map=None) -> Tuple[int, Optional[str]]:
-        """
-        Default attack - used by melee and by default for subclasses that don't override.
-        Accepts optional game_map so subclasses can inspect tile properties (elevation/buildings).
-        Returns (applied_damage, optional_message)
-        """
+        
+        #Default attack - used by melee and by default for subclasses that don't override.
+        #Accepts optional game_map so subclasses can inspect tile properties (elevation/buildings).
+        #Returns (applied_damage, optional_message)
+        
         if not target.is_alive():
             return 0, None
         # compute total damage including bonuses (do not mutate self.attack permanently)
@@ -174,4 +189,4 @@ class Unit(ABC):
         # Note: threat_memory restoration requires access to other units,
         # which is handled at a higher level (Battle.from_dict)
         return unit
-
+"""

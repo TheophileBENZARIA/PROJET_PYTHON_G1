@@ -526,7 +526,7 @@ class Battle:
         # Try to load Unit. from_dict if present
         UnitClass = None
         try:
-            from backend.units import Unit as UnitClass
+            from backend.Units.units import Unit as UnitClass
         except Exception:
             UnitClass = None
 

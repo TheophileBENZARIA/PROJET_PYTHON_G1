@@ -16,10 +16,8 @@ Architecture :
 Chaque général doit implémenter la méthode issue_orders() qui définit sa stratégie.
 """
 
-from abc import ABC, abstractmethod  # Pour créer une classe abstraite
-from typing import List, Optional, Tuple  # Pour le typage des variables
-from backend import units  # Import de notre classe Unit
-from backend import army  # Import de notre classe Army
+from abc import ABC  # Pour créer une classe abstraite
+from backend.Units import units
 
 
 class General(ABC):  
@@ -377,7 +375,7 @@ Architecture :
 Chaque général doit implémenter la méthode issue_orders() qui définit sa stratégie.
 """
 
-from abc import ABC, abstractmethod  # Pour créer une classe abstraite
+from abc import ABC  # Pour créer une classe abstraite
 from typing import List, Optional, Tuple  # Pour le typage des variables
 from backend import units  # Import de notre classe Unit
 from backend import army  # Import de notre classe Army

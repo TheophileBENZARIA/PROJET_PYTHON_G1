@@ -1,8 +1,6 @@
 <<<<<<< HEAD
-import time
-import copy
 from chemin_explication import Unit as SteeringUnit
-from units import Baseunit
+from backend.Units.units import Baseunit
 
 
 
@@ -111,10 +109,9 @@ class Game:
 
         # deep copy ensures history is immutable
 =======
-import time
 import copy
 from chemin_explication import Unit as SteeringUnit
-from units import Baseunit
+from backend.Units.units import Baseunit
 
 
 

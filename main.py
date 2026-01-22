@@ -29,7 +29,7 @@ except Exception:
 
 # new imports for interactive scenario construction
 from backend.map import Map
-from backend. units import Knight, Pikeman, Crossbowman
+from backend.Units.units import Knight, Pikeman, Crossbowman
 
 # Import Lanchester scenario generator
 from backend.scenarios import lanchester

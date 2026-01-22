@@ -11,14 +11,15 @@ class Crossbowman(Unit):
     def unit_type(self) -> str:
         return "Crossbowman"
 
+"""
     def attack_unit(self, target, game_map=None) -> Tuple[int, Optional[str]]:
-        """
-        Ranged "shoot" attack with a small chance for the target to dodge.
-        If `game_map` is provided and the attacker stands on a hill (elevation > 0),
-        the shot deals additional damage (1 extra per elevation level). This function
-        returns (applied_damage, message) where message is a short human-readable string
-        that will be added to the battle's compact event log.
-        """
+        
+        # Ranged "shoot" attack with a small chance for the target to dodge.
+        # If `game_map` is provided and the attacker stands on a hill (elevation > 0),
+        # the shot deals additional damage (1 extra per elevation level). This function
+        # returns (applied_damage, message) where message is a short human-readable string
+        # that will be added to the battle's compact event log.
+        
         if not target.is_alive():
             return 0, None
 
@@ -64,3 +65,5 @@ class Crossbowman(Unit):
 
         # logger. debug("%s", msg)
         return applied, msg
+        
+"""

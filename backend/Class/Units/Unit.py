@@ -1,16 +1,8 @@
-# backend/units.py
-from abc import ABC, abstractmethod
 import uuid
-from typing import Optional, Dict, Any, Tuple
-import random
-import logging
-
 from backend.Class.Army import Army
 
-logger = logging.getLogger(__name__)
 
-
-class Unit(ABC):
+class Unit():
 
 
     def __init__(self, army: Army, hp: int, attack: int, armor: int,
@@ -20,6 +12,7 @@ class Unit(ABC):
         self.__id = str(uuid.uuid4())
         self.army = army
 
+        # caractéristique
         self.hp = hp
         self.attack = attack
         self.armor = armor
@@ -30,6 +23,8 @@ class Unit(ABC):
         self.bonuses = bonuses if bonuses else {}
         self.reload_time = reload_time #le temps qu'il faut entre 2 attaques
         self.cooldown = 0 #le temps necessaire qu'il reste à attendre pour la prochaine attaque
+
+        self.last_attacker = None
 
     @property #id est un argument privé cela permet de créer un getter
     def id(self) :

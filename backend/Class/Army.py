@@ -1,5 +1,7 @@
 from backend.Class.Map import Map
-
+from backend.Class.Units import Unit
+from backend.Class.General import General
+from backend.Class.Battle import Battle
 
 class Army:
     def __init__(self):
@@ -9,7 +11,7 @@ class Army:
 
         self._units = []  # list of Unit objects
 
-    def add_unit(self, unit):
+    def add_unit(self, unit: Unit):
         self._units.append(unit)
 
     def living_units(self):

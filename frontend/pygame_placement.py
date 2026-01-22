@@ -1,5 +1,5 @@
 import pygame
-from backend.Units.units import Knight, Pikeman, Crossbowman
+from backend.Class.Units import Knight, Pikeman, Crossbowman
 
 TILE = 38  # same as pygame_view
 UNIT_TYPES = ["Knight", "Pikeman", "Crossbowman"]

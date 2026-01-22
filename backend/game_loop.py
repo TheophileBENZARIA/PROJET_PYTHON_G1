@@ -1,6 +1,6 @@
 <<<<<<< HEAD
 from chemin_explication import Unit as SteeringUnit
-from backend.Units.units import Baseunit
+from backend.Class.Units import Baseunit
 
 
 
@@ -111,7 +111,7 @@ class Game:
 =======
 import copy
 from chemin_explication import Unit as SteeringUnit
-from backend.Units.units import Baseunit
+from backend.Class.Units import Baseunit
 
 
 

@@ -2,15 +2,15 @@
 """
 Tournament system for running multiple battles between generals and generating reports.
 """
-from typing import List, Dict, Any, Tuple, Callable, Optional
+from typing import List, Dict, Tuple, Callable, Optional
 from dataclasses import dataclass, field
 import os
 import itertools
 from datetime import datetime
 
-from backend.battle import Battle
-from backend.army import Army
-from backend.map import Map
+from backend.Class.battle import Battle
+from backend.Class.army import Army
+from backend.Class.map import Map
 from backend.scenarios import (
     simple_knight_duel,
     mirrored_knight_crossbow_duel,
@@ -21,7 +21,6 @@ from backend.generals import (
     CaptainBraindead,
     MajorDaft,
     GeneralClever,
-    general_from_name,
 )
 
 

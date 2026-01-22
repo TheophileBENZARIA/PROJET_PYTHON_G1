@@ -1,7 +1,7 @@
 # backend/battle.py
 from typing import Dict, List, Any, Optional, Callable, Tuple
 from dataclasses import dataclass
-from backend.army import Army
+from backend.Class.Army import Army
 from backend.generals import General
 import time
 import logging
@@ -503,7 +503,7 @@ class Battle:
 
         # import component classes
         try:
-            from backend.army import Army
+            from backend.Class.army import Army
         except Exception as e:
             raise TypeError(f"Cannot restore armies: failed to import backend.army -> {e}") from e
 
@@ -514,10 +514,10 @@ class Battle:
 
         MapClass = None
         try:
-            from backend.map import Map as MapClass
+            from backend.Class.map import Map as MapClass
         except Exception:
             try:
-                from backend.map import GameMap as MapClass
+                from backend.Class.map import GameMap as MapClass
             except Exception:
                 MapClass = None
 
@@ -526,7 +526,7 @@ class Battle:
         # Try to load Unit. from_dict if present
         UnitClass = None
         try:
-            from backend.Units.units import Unit as UnitClass
+            from backend.Class.Units import Unit as UnitClass
         except Exception:
             UnitClass = None
 

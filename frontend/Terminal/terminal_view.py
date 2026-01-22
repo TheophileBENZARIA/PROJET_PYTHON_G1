@@ -1,5 +1,5 @@
 # frontend/terminal_view.py
-from backend.map import Map
+from backend.Class.map import Map
 
 def print_map(game_map: Map):   # Simple terminal-based map visualization
     for y in range(game_map.height):

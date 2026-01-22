@@ -1,7 +1,7 @@
 # backend/scenarios.py
-from .map import Map
-from .army import Army
-from backend.Units.units import Knight, Crossbowman, Pikeman
+from backend.Class.map import Map
+from backend.Class.army import Army
+from backend.Class.Units import Knight, Crossbowman, Pikeman
 import math
 from typing import Tuple
 

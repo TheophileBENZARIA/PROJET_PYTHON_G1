@@ -4,8 +4,8 @@ import logging
 import argparse
 from typing import Optional, Dict, Tuple, List, Type
 from backend.generals import CaptainBraindead, MajorDaft, GeneralClever
-from backend.battle import Battle
-from backend.army import Army
+from backend.Class.battle import Battle
+from backend.Class.army import Army
 from backend.save_manager import (
     save_battle_json,
     load_battle_json,
@@ -28,8 +28,8 @@ except Exception:
     launch_pygame_battle = None
 
 # new imports for interactive scenario construction
-from backend.map import Map
-from backend.Units.units import Knight, Pikeman, Crossbowman
+from backend.Class.map import Map
+from backend.Class.Units import Knight, Pikeman, Crossbowman
 
 # Import Lanchester scenario generator
 from backend.scenarios import lanchester

@@ -1,7 +1,6 @@
 import os
 import json
 import pickle
-from typing import Any
 from pathlib import Path
 
 SAVE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "saves")
@@ -47,7 +46,7 @@ def load_battle_json(filename="battle.json"):
     filepath = os.path.join(SAVE_DIR, filename)
     with open(filepath, "r", encoding="utf-8") as f:
         data = json.load(f)
-    from backend.battle import Battle
+    from backend.Class.battle import Battle
     battle = Battle.from_dict(data)
     print(f"[json] Battle loaded from {filepath}")
     return battle

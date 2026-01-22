@@ -3,7 +3,7 @@ from time import sleep
 import PyScreen
 
 if __name__ == '__main__':
-    scr = PyScreen.PyScreen("../pygame_assets")
+    scr = PyScreen.PyScreen("pygame_assets")
 
     entl = [
         {

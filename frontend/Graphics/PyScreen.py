@@ -1,7 +1,7 @@
 import pygame
 
 class PyScreen :
-    def __init__(self):
+    def __init__(self, path):
         self.WIDTH, self.HEIGHT = 1920, 1080
         self.offset_x, self.offset_y = 0, 0
         self.zoom_factor = 3
@@ -10,9 +10,9 @@ class PyScreen :
         self.tile_size = 128  # Taille d'une tuile carrée
 
         # Charger l'image de la tuile PNG (image carrée)
-        self.TILE_IMAGE = pygame.image.load("../pygame_assets/tile.png")
+        self.TILE_IMAGE = pygame.image.load(path+"/tile.png")
 
-        self.KNIGHT_IMAGE = pygame.image.load("../pygame_assets/knight.png")
+        self.KNIGHT_IMAGE = pygame.image.load(path+"/knight.png")
 
         pygame.init()
         pygame.display.set_caption("Vue Isométrique avec PNG Carré")

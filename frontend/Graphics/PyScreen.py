@@ -1,6 +1,9 @@
 import pygame
+from frontend.Affichage import Affichage
 
-class PyScreen :
+class PyScreen(Affichage) :
+
+
     def __init__(self, path):
         self.WIDTH, self.HEIGHT = 1920, 1080
         self.offset_x, self.offset_y = 0, 0

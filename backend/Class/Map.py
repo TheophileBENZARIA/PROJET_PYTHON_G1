@@ -1,37 +1,16 @@
-from typing import Optional, Dict, Any, List
-
-class Map :
-    pass
-
-class Tile:
-    def __init__(self, x: int, y: int, elevation: int = 0):
-        self.x = x
-        self.y = y
-        self.elevation = elevation
-        self.unit = None   # a unit currently standing here (set by Map.place_unit)
-        self.building = None
-
-    def is_empty(self) -> bool:
-        return self.unit is None and self.building is None
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "x": self.x,
-            "y": self.y,
-            "elevation": self.elevation,
-            "building": self.building,
-            "unit_id": self.unit.id if self.unit else None,
-        }
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Tile":
-        t = cls(data["x"], data["y"], elevation=data.get("elevation", 0))
-        t.building = data.get("building")
-        # unit will be placed later using unit_id
-        return t
+from backend.Class.Obstacles.Obstacle import Obstacle
 
 
 class Map:
+
+    def __init__(self):
+        self.obstacles = set()
+
+    def add_obstacle(self, obstacle : Obstacle):
+        self.map = self
+        self.obstacles.add(obstacle)
+
+    """
     def __init__(self, width: int, height: int):
         self.width = width
         self.height = height
@@ -79,3 +58,33 @@ class Map:
                 t.building = tile_data.get("building")
                 # do not set t.unit here — unit placement is handled by Battle.from_dict
         return game_map
+
+class Tile:
+
+    def __init__(self, x: int, y: int, elevation: int = 0):
+        self.x = x
+        self.y = y
+        self.elevation = elevation
+        self.unit = None   # a unit currently standing here (set by Map.place_unit)
+        self.building = None
+
+    def is_empty(self) -> bool:
+        return self.unit is None and self.building is None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "x": self.x,
+            "y": self.y,
+            "elevation": self.elevation,
+            "building": self.building,
+            "unit_id": self.unit.id if self.unit else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Tile":
+        t = cls(data["x"], data["y"], elevation=data.get("elevation", 0))
+        t.building = data.get("building")
+        # unit will be placed later using unit_id
+        return t
+
+"""

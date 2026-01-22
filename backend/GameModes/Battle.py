@@ -7,6 +7,8 @@ import time
 import logging
 from collections import deque
 
+from backend.GameModes.GameMode import GameMode
+
 logger = logging.getLogger(__name__)
 
 CASTLE_HP_DEFAULT = 300
@@ -20,7 +22,8 @@ class BattleResult:
     def __repr__(self) -> str:
         return f"BattleResult(winner={self.winner!r}, ticks={self.ticks}, surviving_units={{...}})"
 
-class Battle:
+class Battle(GameMode):
+
     def __init__(self, game_map, army1: Army, general1: General, army2: Army, general2: General):
         self.map = game_map
         self.army1 = army1

@@ -1,6 +1,6 @@
 class Obstacle :
 
-    def __init__(self, size : float, positition : tuple[float]):
+    def __init__(self, positition : tuple[float],size : float):
         self.__size = size
         self.__position = positition
 

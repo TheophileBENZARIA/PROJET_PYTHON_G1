@@ -5,9 +5,8 @@ from backend.Class.Units import Unit
 class Army:
     def __init__(self):
 
-        self.battle = None
+        self.gameMode=None
         self.general = None
-
         self.__units = []  # list of Unit objects
 
     def add_unit(self, unit: Unit):

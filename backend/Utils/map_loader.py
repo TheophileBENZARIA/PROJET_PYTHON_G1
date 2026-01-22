@@ -81,4 +81,4 @@ def compil_info(ch : chr, x, y) :
 
 
 if __name__ == '__main__':
-    load_map_from_text("./test.carte")
+    load_map_from_text("../test.carte")

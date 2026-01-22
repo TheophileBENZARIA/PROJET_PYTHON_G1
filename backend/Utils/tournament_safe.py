@@ -11,7 +11,7 @@ from datetime import datetime
 from backend.Class.battle import Battle
 from backend.Class.army import Army
 from backend.Class.map import Map
-from backend.scenarios import (
+from backend.Utils.scenarios import (
     simple_knight_duel,
     mirrored_knight_crossbow_duel,
     mirrored_triplet_pikeman_knight_crossbow_duel,

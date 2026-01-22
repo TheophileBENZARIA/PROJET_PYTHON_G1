@@ -1,7 +1,6 @@
 from backend.Class.Map import Map
 from backend.Class.Units import Unit
-from backend.Class.Generals import General
-from backend.Class.Battle import Battle
+
 
 class Army:
     def __init__(self):

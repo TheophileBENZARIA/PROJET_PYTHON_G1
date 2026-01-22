@@ -6,7 +6,7 @@ from typing import Optional, Dict, Tuple, List, Type
 from backend.generals import CaptainBraindead, MajorDaft, GeneralClever
 from backend.Class.battle import Battle
 from backend.Class.army import Army
-from backend.save_manager import (
+from backend.Utils.save_manager import (
     save_battle_json,
     load_battle_json,
     save_battle_pickle,
@@ -15,7 +15,7 @@ from backend.save_manager import (
 from frontend. Terminal. terminal_view import print_map, launch_curses_battle
 
 # Import tournament system
-from backend.tournament_safe import (
+from backend.Utils.tournament_safe import (
     run_tournament_cli,
     get_available_scenarios,
     get_available_generals,
@@ -32,7 +32,7 @@ from backend.Class.map import Map
 from backend.Class.Units import Knight, Pikeman, Crossbowman
 
 # Import Lanchester scenario generator
-from backend.scenarios import lanchester
+from backend.Utils.scenarios import lanchester
 
 # available unit types (lowercase keys used internally)
 _UNIT_CLASSES = {

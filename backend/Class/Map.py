@@ -1,5 +1,7 @@
 from typing import Optional, Dict, Any, List
 
+class Map :
+    pass
 
 class Tile:
     def __init__(self, x: int, y: int, elevation: int = 0):

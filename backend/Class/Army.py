@@ -9,16 +9,17 @@ class Army:
         self.battle = None
         self.general = None
 
-        self._units = []  # list of Unit objects
+        self.__units = []  # list of Unit objects
 
     def add_unit(self, unit: Unit):
-        self._units.append(unit)
+        unit.army = self
+        self.__units.append(unit)
 
     def living_units(self):
-        return [u for u in self._units if u.is_alive()]
+        return [u for u in self.__units if u.is_alive()]
 
     def dead_units(self):
-        return [u for u in self._units if not u.is_alive()]
+        return [u for u in self.__units if not u.is_alive()]
 
 
     def testTargets(self, targets, map: Map, otherArmy: Army):

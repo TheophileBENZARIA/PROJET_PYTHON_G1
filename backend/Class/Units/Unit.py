@@ -5,26 +5,36 @@ from backend.Class.Army import Army
 class Unit():
 
 
-    def __init__(self, army: Army, hp: int, attack: int, armor: int,
-                 speed: int, range_: int, reload_time: int,position: tuple[float]= None, classes=None, bonuses=None):
+    def __init__(self, hp: int, attack: int, armor: int,
+                 speed: int, range_: int, reload_time: int,position: tuple[float]= None, size :float=1, classes=None, bonuses=None):
 
 
         self.__id = str(uuid.uuid4())
-        self.army = army
+        self.army = None
 
         # caractéristique
         self.hp = hp
-        self.attack = attack
+        self.__attack = attack
         self.armor = armor
         self.speed = speed
         self.range = range_
         self.position = position  # (x, y) or None
+        self.size = size
         self.classes = classes if classes else []
         self.bonuses = bonuses if bonuses else {}
         self.reload_time = reload_time #le temps qu'il faut entre 2 attaques
         self.cooldown = 0 #le temps necessaire qu'il reste à attendre pour la prochaine attaque
 
         self.last_attacker = None
+
+
+    @property
+    def attack(self):
+        return self.__attack
+
+    @attack.setter
+    def attack(self, value):
+        self.__attack= value
 
     @property #id est un argument privé cela permet de créer un getter
     def id(self) :

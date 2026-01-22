@@ -1,10 +1,36 @@
-from General import General, _manhattan
+from General import General
+from backend.Class.Army import Army
+from backend.Class.Map import Map
+
 
 class MajorDaft(General):
     """
     An aggressive general that always moves units toward the nearest enemy.
     """
 
+    def __init__(self):
+        super().__init__()
+
+
+    def getOrder(self, map: Map, otherArmy: Army):
+        objectifs = []
+        for unit in self.army.living_units():
+            enemies = otherArmy.living_units()
+
+            if enemies:
+                target = min(enemies, key=lambda e: self.__distance(unit, e))
+                objectifs.append((unit,target))
+            else :
+                return None
+        return objectifs
+
+    @staticmethod
+    def __distance(u1, u2):
+        x1, y1 = u1.position
+        x2, y2 = u2.position
+        return (x1 - x2)**2 + (y1 - y2)**2
+
+    """
     def __init__(self):
         super().__init__("Major Daft")
 
@@ -16,9 +42,9 @@ class MajorDaft(General):
                 self. move_toward(unit, target, game_map)
 
     def _neighbour_steps_toward(self, ux:  int, uy:  int, tx: int, ty:  int):
-        """
-        Return candidate neighbor steps (nx,ny) that tend to move from (ux,uy) closer to (tx,ty).
-        """
+        
+        #Return candidate neighbor steps (nx,ny) that tend to move from (ux,uy) closer to (tx,ty).
+        
         dx = 1 if tx > ux else (-1 if tx < ux else 0)
         dy = 1 if ty > uy else (-1 if ty < uy else 0)
 
@@ -39,10 +65,10 @@ class MajorDaft(General):
         return candidates
 
     def move_toward(self, unit, target, game_map):
-        """
-        Move `unit` toward `target` using A* pathfinding to avoid buildings and occupied tiles.
-        Ranged units prefer to keep distance so they can shoot.
-        """
+        
+        #Move `unit` toward `target` using A* pathfinding to avoid buildings and occupied tiles.
+        #Ranged units prefer to keep distance so they can shoot.
+        
         if unit.position is None or target.position is None:
             return
 
@@ -96,7 +122,6 @@ class MajorDaft(General):
                 game_map.move_unit(unit, new_x, new_y)
                 return
 
-    def distance(self, u1, u2):
-        x1, y1 = u1.position
-        x2, y2 = u2.position
-        return abs(x1 - x2) + abs(y1 - y2)
+    
+"""
+

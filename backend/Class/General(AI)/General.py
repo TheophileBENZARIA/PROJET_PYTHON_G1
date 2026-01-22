@@ -11,9 +11,13 @@ from GeneralClever import GeneralClever
 
 class General(ABC):
 
+    @abstractmethod
+    def __init__(self) :
+        self.army = None
+
 
     @abstractmethod
-    def getOrder(self, map: Map, myArmy : Army, otherArmy : Army):
+    def getOrder(self, map: Map, otherArmy : Army):
         pass
 
 

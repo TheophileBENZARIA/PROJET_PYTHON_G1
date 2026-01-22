@@ -9,7 +9,7 @@ class GameMode(ABC) :
         self.map = None
 
     @abstractmethod
-    def initialiser(self):
+    def launch(self):
         pass
 
     @abstractmethod

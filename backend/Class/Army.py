@@ -1,10 +1,8 @@
-from typing import List, Dict, Any
-
 
 class Army:
     def __init__(self):
         self.battle = None
-        self.general= None
+        self.general = None
         self._units = []  # list of Unit objects
 
 

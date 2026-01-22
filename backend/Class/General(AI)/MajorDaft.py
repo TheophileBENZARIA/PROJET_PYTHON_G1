@@ -12,17 +12,17 @@ class MajorDaft(General):
         super().__init__()
 
 
-    def getOrder(self, map: Map, otherArmy: Army):
-        objectifs = []
+    def getTargets(self, map: Map, otherArmy: Army):
+        targets = []
         for unit in self.army.living_units():
             enemies = otherArmy.living_units()
 
             if enemies:
                 target = min(enemies, key=lambda e: self.__distance(unit, e))
-                objectifs.append((unit,target))
+                targets.append((unit,target))
             else :
                 return None
-        return objectifs
+        return targets
 
     @staticmethod
     def __distance(u1, u2):

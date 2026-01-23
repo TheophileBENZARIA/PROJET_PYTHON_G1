@@ -55,7 +55,7 @@ def main():
         help="Use pygame graphical display if available"
     )
     run_parser.add_argument(
-        "--assets-dir", type=str, default="frontend/Graphics/pygame_assets",
+        "--assets_dir", type=str, default="frontend/Graphics/pygame_assets",
         help="Directory containing pygame assets (tiles/sprites)"
     )
 
@@ -216,9 +216,9 @@ def main():
         gameMode.map = map
 
         affichage=None
-        if args.pygame :
-            affichage = PyScreen(args.assets-dir)
-        elif args.curses :
+        if args.use_pygame :
+            affichage = PyScreen(args.assets_dir)
+        elif args.use_curses :
             affichage = Screen()
 
         gameMode.affichage = affichage

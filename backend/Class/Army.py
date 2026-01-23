@@ -50,6 +50,7 @@ class Army:
             dy = ty - uy
             dist2 = dx * dx + dy * dy
 
+            
             # ATTAQUE
             if dist2 <= unit.range * unit.range:
                 if unit.cooldown == 0:
@@ -60,8 +61,16 @@ class Army:
                     unit.cooldown -= 1
                 continue
 
-            # DÉPLACEMENT (pathfinding)
-            path = find_path(map, unit.position, target.position)
+            
+            # DÉPLACEMENT (A*)
+            path = find_path(
+                map,
+                unit.position,
+                target.position,
+                unit,
+                self,          # armée alliée
+                otherArmy      # armée ennemie
+            )
 
             if not path or len(path) < 2:
                 continue
@@ -74,7 +83,7 @@ class Army:
 
         return actions
 
-    def execOrder(self, orders, otherArmy:Army):
+    def execOrder(self, orders: Action, otherArmy:Army):
         #Cette fonction applique les dégâts avec les bonus sur l'armée adverse et
         # déplace des unités alliées à la bonne vitesse selon les ordres.
         pass

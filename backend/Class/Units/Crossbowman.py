@@ -5,7 +5,7 @@ class Crossbowman(Unit):
     def __init__(self, position: tuple[float]):
         # longer range, slower reload, decent attack
         super().__init__(hp=35, attack=6, armor=0,
-                         speed=1, range_=5, reload_time=2,position=position, classes=["Archer"], bonuses={"Spear": 3, "Building": 0},)
+                         speed=1, range_=5, reload_time=2, ligne_of_sight=7,position=position, classes=["Archer"], bonuses={"Spear": 3, "Building": 0},)
 
         self.army = army
 

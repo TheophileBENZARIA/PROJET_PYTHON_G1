@@ -16,22 +16,20 @@ class CaptainBraindead(General):
             return targets
 
         for unit in self.army.living_units():
-            if unit.position is None:
-                continue
 
             last_attacker = getattr(unit, "last_attacker", None)
             if last_attacker in enemy_units:
                 targets.append((unit, last_attacker))
-                continue
+            else :
 
             # no recent attacker: engage closest enemy in line of sight (simplified to nearest distance)
-            target = min(
-                enemy_units,
-                key=lambda enemy: self.__distance_sq(unit, enemy),
-                default=None,
-            )
-            if target is not None:
-                targets.append((unit, target))
+                target = min(
+                    enemy_units,
+                    key=lambda enemy: self.__distance_sq(unit, enemy),
+                    default=None,
+                )
+                if target is not None:
+                    targets.append((unit, target))
 
         return targets
 

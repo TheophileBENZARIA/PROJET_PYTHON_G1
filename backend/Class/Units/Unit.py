@@ -1,5 +1,4 @@
 import uuid
-from backend.Class.Army import Army
 from backend.Class.Units.Crossbowman import Crossbowman
 from backend.Class.Units.Knight import Knight
 from backend.Class.Units.Pikeman import Pikeman

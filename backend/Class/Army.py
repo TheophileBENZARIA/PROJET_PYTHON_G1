@@ -1,5 +1,7 @@
 from backend.Class.Map import Map
 from backend.Class.Units import Unit
+from backend.Utils.pathfinding import find_path
+from backend.Class.Action import Action
 
 
 class Army:
@@ -23,20 +25,103 @@ class Army:
         return [u for u in self.__units if not u.is_alive()]
 
 
-    def testTargets(self, targets, map: Map, otherArmy: Army):
+    def testTargets(self, targets, map: Map, otherArmy: object ):
         # Le générale donne juste des cibles, il associe une unité à une unité adverse
         # L'objectif de cette fonction est de transformer cette association en action
         # Si l'unité cible est trop loin il faut que l'unité se déplace et si elle est dans le champ d'action elle l'attaque
         # Il faut aussi verifier que l'unité peut avancer (elle n'est pas face a un mur ou une autre unité)
         #Il faut vérifier que le cooldown est a zero si on veut attaqué et si le cooldown n'est pas à 0 il faut le diminuer
-        pass
+        actions = []
 
-    def execOrder(self, orders, otherArmy:Army):
+        if isinstance(targets, list):
+            targets = {u: t for u, t in targets}
+
+        for unit, target in targets.items():
+
+            if unit not in self.living_units():
+                continue
+            if target not in otherArmy.living_units():
+                continue
+
+            ux, uy = unit.position
+            tx, ty = target.position
+
+            dx = tx - ux
+            dy = ty - uy
+            dist2 = dx * dx + dy * dy
+
+            
+            # ATTAQUE
+            if dist2 <= unit.range * unit.range:
+                if unit.cooldown == 0:
+                    actions.append(
+                        Action(unit=unit, kind="attack", target=target)
+                    )
+                else:
+                    unit.cooldown -= 1
+                continue
+
+            
+            # DÉPLACEMENT (A*)
+            path = find_path(
+                map,
+                unit.position,
+                target.position,
+                unit,
+                self,          # armée alliée
+                otherArmy      # armée ennemie
+            )
+
+            if not path or len(path) < 2:
+                continue
+
+            next_pos = path[1]
+
+            actions.append(
+                Action(unit=unit, kind="move", target=next_pos)
+            )
+
+        return actions
+
+    def execOrder(self, orders: Action, otherArmy: object):
         #Cette fonction applique les dégâts avec les bonus sur l'armée adverse et
         # déplace des unités alliées à la bonne vitesse selon les ordres.
-        pass
+        """
+        Applique les actions décidées par testTargets :
+        - attaque : dégâts + cooldown
+        - déplacement : mise à jour de la position
+        """
 
-    def fight(self,map:Map, otherArmy : Army) :
+        for action in orders:
+
+            unit = action.unit
+
+            if unit not in self.living_units():
+                continue
+            
+            # ATTAQUE
+            if action.kind == "attack":
+                target = action.target
+
+                # la cible peut être morte entre temps
+                if target not in otherArmy.living_units():
+                    continue
+
+                # calcul des dégâts 
+                damage = max(0, unit.attack - target.armor)
+                target.hp -= damage
+                target.last_attacker = unit
+
+                # reset du cooldown
+                unit.cooldown = unit.reload_time
+
+            # DÉPLACEMENT
+            elif action.kind == "move":
+                new_pos = action.target
+                unit.position = new_pos
+                unit.cooldown -= 1
+
+    def fight(self,map:Map, otherArmy: object ) :
 
         targets = self.general.getTargets(map, otherArmy)
         orders = self.testTargets(targets,map,otherArmy)

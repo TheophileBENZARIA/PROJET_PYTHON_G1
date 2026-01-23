@@ -15,21 +15,22 @@ class PyScreen(Affichage) :
     def afficher(self, map: Map, army1: Army, army2: Army):
 
         self.screen.fill((0, 0, 0))
+        x_max,x_min,y_max,y_min = Affichage.get_sizeMap(map, army1, army2)
 
         tile_image = pygame.transform.scale(self.TILE_IMAGE,
                                             (self.tile_size * self.zoom_factor, self.tile_size * self.zoom_factor))
 
-        for x in range(-5, 5):  # De -5 à 5 pour une taille de carte de 10x10
-            for y in range(-5, 5):
+        for x in range(x_min,x_max):
+            for y in range(y_min, y_max):
                 # Calcul des coordonnées isométriques
                 iso_x, iso_y = self.convert_to_iso((x, y))
-                # Calculer la position pour afficher l'image correctement
+
                 rect = tile_image.get_rect(center=(iso_x, iso_y))
 
                 # Afficher l'image (tuile carrée transformée)
                 self.screen.blit(tile_image, rect.topleft)
 
-        for entity in entitylist:
+        for unit in army1.living_units()+army2.living_units():
             iso_coor = self.convert_to_iso(entity["coor"])
 
             if entity["type"] is "Knight":

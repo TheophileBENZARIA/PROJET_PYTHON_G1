@@ -1,9 +1,6 @@
 # backend/generals.py
 from abc import ABC, abstractmethod
 
-from backend.Class.Army import Army
-from backend.Class.Map import Map
-
 from CaptainBraindead import CaptainBraindead
 from MajorDaft import MajorDaft
 from GeneralClever import GeneralClever
@@ -17,7 +14,7 @@ class General(ABC):
 
 
     @abstractmethod
-    def getTargets(self, map: Map, otherArmy: Army):
+    def getTargets(self, map, otherArmy):
         #C'est ici le la stratégie du générale s'opère, cette fonction ne fait qu'assigné une unité alliée à une unité ennemie,
         # selon des critères propres
         pass

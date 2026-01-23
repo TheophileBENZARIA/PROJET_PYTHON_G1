@@ -47,7 +47,7 @@ class PyScreen(Affichage) :
                 IMAGE = self.CROSSBOWMAN_IMAGE
 
 
-            unit_image = pygame.transform.scale(IMAGE, (self.tile_size * self.zoom_factor,self.tile_size * self.zoom_factor))
+            unit_image = pygame.transform.scale(IMAGE, (unit.size * self.zoom_factor,self.tile_size * self.zoom_factor))
             rect = unit_image.get_rect(center=iso_coor)
             self.screen.blit(tile_image, rect.topleft)
             """

@@ -6,7 +6,7 @@ we can script formations without relying on a visual editor.  Each helper return
 ``(game_map, army1, army2)`` and the caller can plug the result straight into the
 game loop.
 """
-
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -150,3 +150,4 @@ SCENARIO_REGISTRY: Dict[str, Callable[[], Tuple[Map, Army, Army]]] = {
     "knight_duel": mirrored_knight_duel,
     "triplet": mirrored_triplet,
 }
+"""

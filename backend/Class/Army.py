@@ -1,5 +1,7 @@
 from backend.Class.Map import Map
 from backend.Class.Units import Unit
+from backend.Utils.pathfinding import find_path
+from backend.Class.Action import Action
 
 
 class Army:
@@ -26,7 +28,48 @@ class Army:
         # Si l'unité cible est trop loin il faut que l'unité se déplace et si elle est dans le champ d'action elle l'attaque
         # Il faut aussi verifier que l'unité peut avancer (elle n'est pas face a un mur ou une autre unité)
         #Il faut vérifier que le cooldown est a zero si on veut attaqué et si le cooldown n'est pas à 0 il faut le diminuer
-        pass
+        actions = []
+
+        if isinstance(targets, list):
+            targets = {u: t for u, t in targets}
+
+        for unit, target in targets.items():
+
+            if unit not in self.living_units():
+                continue
+            if target not in otherArmy.living_units():
+                continue
+
+            ux, uy = unit.position
+            tx, ty = target.position
+
+            dx = tx - ux
+            dy = ty - uy
+            dist2 = dx * dx + dy * dy
+
+            # ATTAQUE
+            if dist2 <= unit.range * unit.range:
+                if unit.cooldown == 0:
+                    actions.append(
+                        Action(unit=unit, kind="attack", target=target)
+                    )
+                else:
+                    unit.cooldown -= 1
+                continue
+
+            # DÉPLACEMENT (pathfinding)
+            path = find_path(map, unit.position, target.position)
+
+            if not path or len(path) < 2:
+                continue
+
+            next_pos = path[1]
+
+            actions.append(
+                Action(unit=unit, kind="move", target=next_pos)
+            )
+
+        return actions
 
     def execOrder(self, orders, otherArmy:Army):
         #Cette fonction applique les dégâts avec les bonus sur l'armée adverse et

@@ -1,7 +1,7 @@
 import argparse
 
-from backend.Class.Generals.General import General
 from backend.GameModes.Battle import Battle
+from backend.Utils.class_by_name import general_from_name, get_available_generals
 from backend.Utils.file_loader import load_mirrored_army_from_file, load_map_from_file
 from frontend.Graphics.PyScreen import PyScreen
 from frontend.Terminal import Screen
@@ -9,8 +9,6 @@ from frontend.Terminal import Screen
 
 def main():
 
-    def get_available_generals() :
-        return ""
 
     def get_available_scenarios() :
         return ""
@@ -210,9 +208,9 @@ def main():
         gameMode.army1 = army1
         gameMode.army2 = army2
 
-        army1.general = General.general_from_name(args.general1)
+        army1.general = general_from_name(args.general1)
         army1.general.army = army1
-        army2.general = General.general_from_name(args.general2)
+        army2.general = general_from_name(args.general2)
         army2.general.army = army2
 
         gameMode.map = map

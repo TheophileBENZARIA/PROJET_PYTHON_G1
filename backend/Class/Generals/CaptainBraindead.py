@@ -1,5 +1,5 @@
-from General import General
 from backend.Class.Army import Army
+from backend.Class.Generals.General import General
 from backend.Class.Map import Map
 
 

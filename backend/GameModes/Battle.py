@@ -13,7 +13,7 @@ class Battle(GameMode):
         pass
 
     def launch(self):
-        pass
+        self.affichage.initialiser()
 
     def gameLoop(self):
         while not self.army1.isEmpty() and not self.army2.isEmpty() and (not self.max_tick or self.tick < self.max_tick) :

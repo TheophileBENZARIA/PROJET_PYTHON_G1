@@ -17,7 +17,7 @@ class General(ABC):
 
 
     @abstractmethod
-    def getTargets(self, army, enemy_army, game_map):
+    def getTargets(self, map: Map, otherArmy: Army):
         #C'est ici le la stratégie du générale s'opère, cette fonction ne fait qu'assigné une unité alliée à une unité ennemie,
         # selon des critères propres
         pass

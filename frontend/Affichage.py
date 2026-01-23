@@ -17,3 +17,6 @@ class Affichage(ABC) :
     def afficher(self,map:Map, army1:Army, army2:Army):
         pass
 
+    @classmethod
+    def get_sizeMap(cls, map, army1, army2):
+        for

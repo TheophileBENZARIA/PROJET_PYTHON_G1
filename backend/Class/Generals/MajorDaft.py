@@ -1,6 +1,5 @@
 from General import General
-from backend.Class.Army import Army
-from backend.Class.Map import Map
+
 
 
 class MajorDaft(General):

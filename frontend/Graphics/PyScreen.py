@@ -9,13 +9,16 @@ class PyScreen(Affichage) :
 
     def initialiser(self):
         pygame.init()
-        pygame.display.set_caption("Vue Isométrique avec PNG Carré")
+        pygame.display.set_caption("Vue pygame")
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
 
     def afficher(self, map: Map, army1: Army, army2: Army):
+
         self.screen.fill((0, 0, 0))
+
         tile_image = pygame.transform.scale(self.TILE_IMAGE,
                                             (self.tile_size * self.zoom_factor, self.tile_size * self.zoom_factor))
+
         for x in range(-5, 5):  # De -5 à 5 pour une taille de carte de 10x10
             for y in range(-5, 5):
                 # Calcul des coordonnées isométriques
@@ -100,7 +103,7 @@ class PyScreen(Affichage) :
 
         if keys[pygame.K_ESCAPE]: quit()
 
-        
+
     def convert_to_iso(self,coor : tuple):
         x, y = coor
         iso_x = ((x - y) * self.tile_size // 2 + self.WIDTH // 2 + self.offset_x) * self.zoom_factor

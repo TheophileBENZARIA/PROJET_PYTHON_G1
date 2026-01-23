@@ -1,8 +1,14 @@
 from dataclasses import dataclass
 from typing import Tuple, Union
 
-@dataclass(frozen=True)
+
 class Action:
-    unit: object                 # unité qui agit
-    kind: str                    # "attack" | "move"
-    target: Union[object, Tuple[float, float]]
+
+    def __init__(self, unit, king, target):
+
+        self.unit: object   =unit              # unité qui agit
+        self.kind: str    =king                # "attack" | "move"
+        self.target: Union[object, Tuple[float, float]]= target
+
+    def __repr__(self):
+        return f"({self.unit},'{self.kind}',{self.target})"

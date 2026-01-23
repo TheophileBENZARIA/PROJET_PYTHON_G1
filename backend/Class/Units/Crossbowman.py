@@ -1,3 +1,4 @@
+from random import randint
 from backend.Class.Units.Unit import Unit
 
 
@@ -9,8 +10,14 @@ class Crossbowman(Unit):
 
         self.army = None
 
+
     def unit_type(self) -> str:
         return "Crossbowman"
+
+    @property
+    def attack(self):
+        if randint(1, 100) >= 85: return 0
+        return self._attack
 
 """
     def attack_unit(self, target, game_map=None) -> Tuple[int, Optional[str]]:

@@ -1,5 +1,5 @@
 import uuid
-
+from abc import abstractmethod
 
 
 class Unit():
@@ -14,7 +14,7 @@ class Unit():
 
         # caractéristique
         self.hp = hp
-        self.__attack = attack
+        self._attack = attack
         self.armor = armor
         self.speed = speed
         self.range = range_
@@ -28,14 +28,10 @@ class Unit():
 
         self.last_attacker = None
 
-
     @property
     def attack(self):
-        return self.__attack
+        return self._attack
 
-    @attack.setter
-    def attack(self, value):
-        self.__attack= value
 
     @property #id est un argument privé cela permet de créer un getter
     def id(self) :
@@ -44,17 +40,6 @@ class Unit():
     def is_alive(self) -> bool:
         return self.hp > 0
 
-
-
-    @staticmethod
-    def unit_from_name(name: str):
-        UNIT_CLASSES = {
-            "knight": Knight,
-            "pikeman": Pikeman,
-            "crossbowman": Crossbowman,
-        }
-
-        return UNIT_CLASSES.get(name)
 
 """
     # Dans le init ---------------------------------------

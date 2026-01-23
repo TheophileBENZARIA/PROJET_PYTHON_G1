@@ -8,10 +8,10 @@ class MajorDaft(General):
     An aggressive general that always moves units toward the nearest enemy.
     """
 
-    def getTargets(self, map: Map, otherArmy: Army):
+    def getTargets(self, army, enemy_army, game_map):
         targets = []
         for unit in self.army.living_units():
-            enemies = otherArmy.living_units()
+            enemies = enemy_army.living_units()
 
             if enemies:
                 target = min(enemies, key=lambda e: self.__distance(unit, e))
@@ -19,6 +19,10 @@ class MajorDaft(General):
             else :
                 return None
         return targets
+
+    @property
+    def name(self):
+        return "MajorDaft"
 
     @staticmethod
     def __distance(u1, u2):

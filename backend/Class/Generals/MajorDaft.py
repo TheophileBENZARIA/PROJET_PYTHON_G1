@@ -8,10 +8,6 @@ class MajorDaft(General):
     An aggressive general that always moves units toward the nearest enemy.
     """
 
-    def __init__(self):
-        super().__init__()
-
-
     def getTargets(self, map: Map, otherArmy: Army):
         targets = []
         for unit in self.army.living_units():

@@ -21,6 +21,9 @@ Legend (example):
 
 This loader returns a Map instance and optionally lists of spawned units.
 """
+from backend.Class.Army import Army
+from backend.Class.Map import Map
+
 """
 from .map import Map, Tile
 from .units import Knight
@@ -32,7 +35,7 @@ CHAR_LEGEND = {
     "P": {"elevation": 1, "building": None},
 }
 
-def load_map_from_text(path: str) -> tuple[Army] :
+def load_map_from_file(path: str) -> Map :
     with open(path, "r", encoding="utf-8") as f:
         x_max,y_max = f.readline().replace("\n","").split(";")
         x_max,y_max= int(x_max), int(y_max)
@@ -74,11 +77,12 @@ def load_map_from_text(path: str) -> tuple[Army] :
     """
     return None
 
-def compil_info(ch : chr, x, y) :
-
+def load_mirrored_army_from_file(path: str) -> tuple[Army] :
+    #Cette fonction recupère un ficher, structurer correctement et génère une armée et une armée mirroir
+    pass
 
 
 
 
 if __name__ == '__main__':
-    load_map_from_text("../test.carte")
+    load_map_from_file("../test.carte")

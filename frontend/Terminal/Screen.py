@@ -4,10 +4,13 @@ import sys
 from time import sleep
 from typing import List, Optional
 
+from frontend.Affichage import Affichage
+
+
 # The screen expects:
 #  - a 2D grid (list of rows) where each cell is an object with __str__ returning a printable char (UniteTerm)
 #  - and an optional list of recent event strings to render in a compact log
-class Screen:
+class Screen(Affichage):
     def __init__(self, stdsrc: curses.window):
         self.std = stdsrc
         self.x = 0  # viewport x offset

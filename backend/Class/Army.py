@@ -13,6 +13,7 @@ class Army:
         unit.army = self
         self.__units.append(unit)
 
+
     def living_units(self):
         return [u for u in self.__units if u.is_alive()]
 
@@ -39,8 +40,6 @@ class Army:
         orders = self.testTargets(targets,map,otherArmy)
 
         self.execOrder(orders, otherArmy)
-
-
 
 
     """

@@ -7,6 +7,8 @@ from typing import Tuple
 
 CASTLE_HP = 300
 
+
+
 def _add_sample_terrain(game_map: Map):
     """Add a few buildings and hills to the provided map for scenario testing."""
     w, h = game_map.width, game_map.height

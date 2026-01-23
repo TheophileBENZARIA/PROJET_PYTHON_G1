@@ -7,6 +7,7 @@ class GameMode(ABC) :
         self.army2 = None
         self.affichage = None
         self.map = None
+        self.isSave = False
 
     @abstractmethod
     def launch(self):
@@ -18,6 +19,10 @@ class GameMode(ABC) :
 
     @abstractmethod
     def save(self):
+        pass
+
+    @abstractmethod
+    def end(self):
         pass
 
 

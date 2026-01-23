@@ -11,7 +11,6 @@ from GeneralClever import GeneralClever
 
 class General(ABC):
 
-    @abstractmethod
     def __init__(self) :
         self.army = None
 

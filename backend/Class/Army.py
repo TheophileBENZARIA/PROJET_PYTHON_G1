@@ -13,6 +13,8 @@ class Army:
         unit.army = self
         self.__units.append(unit)
 
+    def isEmpty(self):
+        return len(self.living_units()) <= 0
 
     def living_units(self):
         return [u for u in self.__units if u.is_alive()]

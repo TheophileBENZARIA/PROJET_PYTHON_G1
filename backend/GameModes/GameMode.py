@@ -9,6 +9,7 @@ class GameMode(ABC) :
         self.map = None
         self.isSave = False
 
+
     @abstractmethod
     def launch(self):
         pass

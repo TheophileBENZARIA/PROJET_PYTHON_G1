@@ -28,7 +28,7 @@ class CaptainBraindead(General):
                     key=lambda enemy: self.__distance_sq(unit, enemy),
                     default=None,
                 )
-                if target is not None:
+                if target and self.__distance_sq(unit, target) < unit.line_of_sight**2:
                     targets.append((unit, target))
 
         return targets

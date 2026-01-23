@@ -27,7 +27,7 @@ class GeneralClever(General):
         if not self._is_deployed and min_distance <= self._deployment_threshold:
             self._is_deployed = True
 
-        assignments = []
+        targets = []
         for unit in my_units:
             if unit.position is None:
                 continue
@@ -38,9 +38,9 @@ class GeneralClever(General):
 
             target = self._choose_target(unit, enemies)
             if target is not None:
-                assignments.append((unit, target))
+                targets.append((unit, target))
 
-        return assignments
+        return targets
 
     def _choose_target(self, unit, enemies):
         best = None

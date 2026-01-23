@@ -2,10 +2,10 @@
 """
 Simple ASCII map loader.
 """
-
-from backend.Class.Army import Army
 from backend.Class.Map import Map
-
+from backend.Class.Units.Crossbowman import Crossbowman
+from backend.Class.Units.Knight import Knight
+from backend.Class.Units.Pikeman import Pikeman
 
 """
 Army file format (example):
@@ -53,25 +53,15 @@ def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
             for x, char in enumerate(line):
                 
                 # On vérifie si le caractère correspond à une unité connue
-                if char in "KPC":
-                    
-                    # --- CRÉATION JOUEUR 1 ---
-                   
-                    pos1 = (float(x), float(y))
-                   
-                    u1 = Unit(100, 10, 5, 2, 1, 1, position=pos1)
-                    # add_unit lie l'unité à army1 et met à jour u1.army
-                    army1.add_unit(u1)
+                unit_class = None
+                if char == 'K' : unit_class = Knight
+                elif char == 'C': unit_class = Crossbowman
+                elif char == 'P' : unit_class = Pikeman
+                if unit_class :
+                    u1 = unit_class((x,y))
+                    u2 = unit_class((x,-y))
 
-                    # --- CRÉATION JOUEUR 2 (LE MIROIR) ---
-                    
-                    
-                    x_mirror = float(x_max - 1 - x)
-                    pos2 = (x_mirror, float(y)) # 'y' reste le même (symétrie horizontale)
-                    
-                    # Instance de l'unité J2 (indépendante de u1)
-                    u2 = Unit(100, 10, 5, 2, 1, 1, position=pos2)
-                    
+                    army1.add_unit(u1)
                     army2.add_unit(u2)
 
    
@@ -95,6 +85,7 @@ Legend (example):
 This loader returns a Map instance and optionally lists of spawned units.
 """
 def load_map_from_file(path: str) -> Map:
+    """
     with open(path, "r", encoding="utf-8") as f:
         x_max, y_max = f.readline().replace("\n", "").split(";")
         x_max, y_max = int(x_max), int(y_max)
@@ -107,15 +98,9 @@ def load_map_from_file(path: str) -> Map:
                 ch = lines[y][x]
             except:
                 break
+    """
+    return Map()
 
-    return None
-
-
-
-
-
-if __name__ == '__main__':
-    load_map_from_file("../test.carte")
 
 """
     CHAR_LEGEND = {

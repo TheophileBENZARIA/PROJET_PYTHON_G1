@@ -1,3 +1,5 @@
+from time import sleep
+
 import pygame
 
 from backend.Class.Army import Army
@@ -70,6 +72,7 @@ class PyScreen(Affichage) :
             """
 
         pygame.display.flip()
+        sleep(1)
 
     def __init__(self, *args):
         super().__init__(*args)

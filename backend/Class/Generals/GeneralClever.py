@@ -1,4 +1,4 @@
-from General import General, _manhattan
+from backend.Class.Generals.General import General
 
 
 class GeneralClever(General):

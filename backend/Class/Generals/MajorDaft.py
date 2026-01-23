@@ -1,5 +1,4 @@
-from General import General
-
+from backend.Class.Generals.General import General
 
 
 class MajorDaft(General):

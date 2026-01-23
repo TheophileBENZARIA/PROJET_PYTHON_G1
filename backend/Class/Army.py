@@ -86,7 +86,40 @@ class Army:
     def execOrder(self, orders: Action, otherArmy:Army):
         #Cette fonction applique les dégâts avec les bonus sur l'armée adverse et
         # déplace des unités alliées à la bonne vitesse selon les ordres.
-        pass
+        """
+        Applique les actions décidées par testTargets :
+        - attaque : dégâts + cooldown
+        - déplacement : mise à jour de la position
+        """
+
+        for action in orders:
+
+            unit = action.unit
+
+            if unit not in self.living_units():
+                continue
+            
+            # ATTAQUE
+            if action.kind == "attack":
+                target = action.target
+
+                # la cible peut être morte entre temps
+                if target not in otherArmy.living_units():
+                    continue
+
+                # calcul des dégâts 
+                damage = max(0, unit.attack - target.armor)
+                target.hp -= damage
+                target.last_attacker = unit
+
+                # reset du cooldown
+                unit.cooldown = unit.reload_time
+
+            # DÉPLACEMENT
+            elif action.kind == "move":
+                new_pos = action.target
+                unit.position = new_pos
+                unit.cooldown -= 1
 
     def fight(self,map:Map, otherArmy : Army) :
 

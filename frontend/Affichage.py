@@ -20,7 +20,17 @@ class Affichage(ABC) :
     def get_sizeMap(cls, map, army1, army2):
         x_max , y_max, x_min, y_min = 0,0,0,0
 
-        for unit in army2.livings_unit()+ army1.livings_unit() :
+        for unit in army2.livings_unit() :
+            if unit.position[0] > x_max:
+                x_max =unit.position[0]
+            if unit.position[1] > y_max:
+                y_max =unit.position[1]
+            if unit.position[0] < x_min:
+                x_min =unit.position[0]
+            if unit.position[1] < y_min:
+                y_min =unit.position[1]
+
+        for unit in army1.livings_unit() :
             if unit.position[0] > x_max:
                 x_max =unit.position[0]
             if unit.position[1] > y_max:

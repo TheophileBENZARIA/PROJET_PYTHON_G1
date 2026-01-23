@@ -1,12 +1,6 @@
 # backend/generals.py
 from abc import ABC, abstractmethod
 
-from CaptainBraindead import CaptainBraindead
-from MajorDaft import MajorDaft
-from GeneralClever import GeneralClever
-
-
-
 class General(ABC):
 
     def __init__(self):
@@ -20,15 +14,6 @@ class General(ABC):
         pass
 
 
-    @staticmethod
-    def general_from_name(name: str) :
-        GENERAL_REGISTRY: dict[str, type] = {
-            "CaptainBraindead": CaptainBraindead,
-            "MajorDaft": MajorDaft,
-            "GeneralClever": GeneralClever,
-        }
-
-        return GENERAL_REGISTRY.get(name, CaptainBraindead)
 
 
 

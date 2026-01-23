@@ -1,9 +1,8 @@
-from Unit import Unit
-from backend.Class.Army import Army
+from backend.Class.Units.Unit import Unit
 
 
 class Knight(Unit):
-    def __init__(self, army: Army, position: tuple[float]):
+    def __init__(self, position: tuple[float]):
         super().__init__(hp=100, attack=10, armor=2,
                          speed=2, range_=1, reload_time=2,position=position, classes=["Cavalry"], bonuses={"Infantry": 2})
 

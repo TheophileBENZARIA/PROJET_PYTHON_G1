@@ -3,7 +3,7 @@
 Simple ASCII map loader.
 
 Map file format (example):
-40*20
+20;5
 ####################
 #A..............B..#
 #..h..H....b.......#
@@ -24,16 +24,32 @@ This loader returns a Map instance and optionally lists of spawned units.
 from backend.Class.Army import Army
 from backend.Class.Map import Map
 
-"""
-from .map import Map, Tile
-from .units import Knight
-from .army import Army
-"""
 CHAR_LEGEND = {
     "K": {"elevation": 0, "building": None},
     "C": {"elevation": 0, "building": "wall"},
     "P": {"elevation": 1, "building": None},
 }
+
+"""
+Map file format (example):
+20;5
+####################
+#A..............B..#
+#..h..H....b.......#
+#..................#
+####################
+
+Legend (example):
+  . = empty plain tile
+  # = impassable (treated as building/wall)
+  h = hill (elevation +1)
+  H = high hill (elevation +2)
+  b = building (provides cover)
+  A = spawn Player1 unit (placed as Knight by default)
+  B = spawn Player2 unit
+
+This loader returns a Map instance and optionally lists of spawned units.
+"""
 
 def load_map_from_file(path: str) -> Map :
     with open(path, "r", encoding="utf-8") as f:
@@ -76,8 +92,26 @@ def load_map_from_file(path: str) -> Map :
     return game_map, army1, army2
     """
     return None
+""""
+Map file format (example):
+20;5
+####################
+#..................#
+#..h..H....b.......#
+#..................#
+####################
 
-def load_mirrored_army_from_file(path: str) -> tuple[Army] :
+Legend (example):
+  . = empty plain tile
+  # = impassable (treated as building/wall)
+  h = hill (elevation +1)
+  H = high hill (elevation +2)
+  b = building (provides cover)
+
+This loader returns a tuple Map instance and optionally lists of spawned units.
+"""
+
+def load_mirrored_army_from_file(path: str) -> tuple[Army, Army] :
     #Cette fonction recupère un ficher, structurer correctement et génère une armée et une armée mirroir
     pass
 

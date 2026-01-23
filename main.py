@@ -3,7 +3,6 @@ import argparse
 from backend.Class.Generals.General import General
 from backend.GameModes.Battle import Battle
 from backend.Utils.file_loader import load_mirrored_army_from_file, load_map_from_file
-from frontend.Affichage import Affichage
 from frontend.Graphics.PyScreen import PyScreen
 from frontend.Terminal import Screen
 
@@ -208,9 +207,7 @@ def main():
         army1,army2 = load_mirrored_army_from_file(args.army_file)
         map = load_map_from_file(args.map_file)
 
-        army1.gameMode = gameMode
         gameMode.army1 = army1
-        army2.gameMode = gameMode
         gameMode.army2 = army2
 
         army1.general = General.general_from_name(args.general1)
@@ -218,7 +215,6 @@ def main():
         army2.general = General.general_from_name(args.general2)
         army2.general.army = army2
 
-        map.gameMode = gameMode
         gameMode.map = map
 
         affichage=None
@@ -228,7 +224,6 @@ def main():
             affichage = Screen()
 
         gameMode.affichage = affichage
-        affichage.gameMode = gameMode
 
 
         choice = input("Do you want to save this battle? (y/n): ")

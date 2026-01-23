@@ -209,9 +209,12 @@ def main():
         gameMode.army1 = army1
         gameMode.army2 = army2
 
-        army1.general = general_from_name(args.general1)
+        general1_cls = general_from_name(args.general1)
+        general2_cls = general_from_name(args.general2)
+
+        army1.general = general1_cls()
         army1.general.army = army1
-        army2.general = general_from_name(args.general2)
+        army2.general = general2_cls()
         army2.general.army = army2
 
         gameMode.map = map
@@ -228,7 +231,7 @@ def main():
         choice = input("Do you want to save this battle? (y/n): ")
         if choice. lower().startswith("y"):
             gameMode.isSave = True
-
+        
         gameMode.launch()
         gameMode.gameLoop()
         gameMode.end()
@@ -383,3 +386,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    

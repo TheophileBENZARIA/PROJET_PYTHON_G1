@@ -107,8 +107,15 @@ class Army:
                 if target not in otherArmy.living_units():
                     continue
 
-                # calcul des dégâts 
-                damage = max(0, unit.attack - target.armor)
+                # calcul des dégâts (inclut bonus de classe si disponible)
+                bonus = 0
+                if hasattr(unit, "compute_bonus") and callable(getattr(unit, "compute_bonus")):
+                    try:
+                        bonus = unit.compute_bonus(target)
+                    except Exception:
+                        bonus = 0
+
+                damage = max(0, (unit.attack + bonus) - target.armor)
                 target.hp -= damage
                 target.last_attacker = unit
 

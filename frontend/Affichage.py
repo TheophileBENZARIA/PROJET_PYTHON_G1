@@ -21,6 +21,7 @@ class Affichage(ABC) :
         x_max , y_max, x_min, y_min = 0,0,0,0
 
         for unit in army2.living_units():
+            print(unit.position)
             if unit.position[0] > x_max:
                 x_max = unit.position[0]
             if unit.position[1] > y_max:

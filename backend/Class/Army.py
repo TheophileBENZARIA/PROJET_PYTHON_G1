@@ -45,14 +45,14 @@ class Army:
                 dy = ty - uy
                 dist2 = dx * dx + dy * dy
 
-                print(unit, target, dist2, unit.range,dist2 <= unit.range **2)
+                #print(unit, target, dist2, unit.range,dist2 <= unit.range **2)
 
                 # ATTAQUE
                 if dist2 <= unit.range **2 :
                     if unit.cooldown <= 0:
                         actions.append(Action(unit, "attack", target))
                 else:
-                    vector = (dx/(dist2**0.5)*unit.speed, dy/(dist2**0.5)*unit.speed)
+                    vector = (ux+dx/(dist2**0.5)*unit.speed, uy+dy/(dist2**0.5)*unit.speed)
                     """
                     # DÉPLACEMENT (A*)
                     path = find_path(
@@ -127,17 +127,17 @@ class Army:
             
 
     def fight(self,map:Map, otherArmy ) :
-        print("me",len(self.living_units()), len(otherArmy.living_units()))
+        #print("me",len(self.living_units()), len(otherArmy.living_units()))
 
         targets = self.general.getTargets(map, otherArmy)
-        print("me", len(self.living_units()), len(otherArmy.living_units()))
-        print("targets" ,targets)
+        #print("me", len(self.living_units()), len(otherArmy.living_units()))
+        #print("targets" ,targets)
         orders = self.testTargets(targets,map,otherArmy)
-        print("me", len(self.living_units()), len(otherArmy.living_units()))
-        print("orders", orders)
+        #print("me", len(self.living_units()), len(otherArmy.living_units()))
+        #print("orders", orders)
         self.execOrder(orders, otherArmy)
-        print("me", len(self.living_units()), len(otherArmy.living_units()))
-        print("executer")
+        #print("me", len(self.living_units()), len(otherArmy.living_units()))
+        #print("executer")
 
 
     """

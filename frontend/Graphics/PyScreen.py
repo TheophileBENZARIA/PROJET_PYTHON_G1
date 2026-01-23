@@ -13,85 +13,50 @@ class PyScreen(Affichage) :
 
 
     def initialiser(self):
+        # Initialisation de Pygame
         pygame.init()
-        pygame.display.set_caption("Vue pygame")
-        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
+        # Création de la fenêtre
+        self.screen = pygame.display.set_mode((800, 600))
+        pygame.display.set_caption("Affichage d'une tile")
+        # Chargement de l'image
 
-    def afficher(self, map: Map, army1: Army, army2: Army):
-
-        self.screen.fill((0, 0, 0))
-        x_max,x_min,y_max,y_min = Affichage.get_sizeMap(map, army1, army2)
-
-        tile_image = pygame.transform.scale(self.TILE_IMAGE,
-                                            (self.tile_size * self.zoom_factor, self.tile_size * self.zoom_factor))
-
-        for x in range(x_min,x_max):
-            for y in range(y_min, y_max):
-                # Calcul des coordonnées isométriques
-                iso_x, iso_y = self.convert_to_iso((x, y))
-
-                rect = tile_image.get_rect(center=(iso_x, iso_y))
-
-                # Afficher l'image (tuile carrée transformée)
-                self.screen.blit(tile_image, rect.topleft)
-
-        for unit in army1.living_units()+army2.living_units():
-            iso_coor = self.convert_to_iso(unit.position)
-
-            if isinstance(unit, Knight):
-                IMAGE = self.KNIGHT_IMAGE
-            if isinstance(unit, Pikeman):
-                IMAGE = self.PIKEMAN_IMAGE
-            if isinstance(unit, Crossbowman):
-                IMAGE = self.CROSSBOWMAN_IMAGE
-
-
-            unit_image = pygame.transform.scale(IMAGE, (self.tile_size * self.zoom_factor,self.tile_size * self.zoom_factor))
-            rect = unit_image.get_rect(center=iso_coor)
-            self.screen.blit(tile_image, rect.topleft)
-            """
-            bar_width = 40 / self.zoom_factor
-            bar_height = 6 / self.zoom_factor
-            bar_x = iso_coor[0]
-            bar_y = iso_coor[1] - 100 / self.zoom_factor  # au-dessus de l'ennemi
-
-            # Fond (rouge)
-            pygame.draw.rect(
-                self.screen,
-                (255, 0, 0),
-                (bar_x, bar_y, bar_width, bar_height)
-            )
-
-            # Vie actuelle (verte)
-            health_ratio = entity["health"] / entity["max_health"]
-            pygame.draw.rect(
-                self.screen,
-                (0, 255, 0),
-                (bar_x, bar_y, bar_width * health_ratio, bar_height)
-            )
-            """
-
-        pygame.display.flip()
-        sleep(1)
-
-    def __init__(self, *args):
-        super().__init__(*args)
-        path = args[0]
         self.WIDTH, self.HEIGHT = 1920, 1080
         self.offset_x, self.offset_y = 0, 0
         self.zoom_factor = 3
 
         # Paramètres de la vue isométrique
-        self.tile_size = 128  # Taille d'une tuile carrée
+        self.tile_size = 10  # Taille d'une tuile carrée
 
         # Charger l'image de la tuile PNG (image carrée)
-        self.TILE_IMAGE = pygame.image.load(path+"/tile.png")
+        self.TILE_IMAGE = pygame.image.load(self.path + "tile.bmp").convert()
 
-        self.KNIGHT_IMAGE = pygame.image.load(path+"/knight.png")
-        self.PIKEMAN_IMAGE = pygame.image.load(path + "/pikeman.png")
-        self.CROSSBOWMAN_IMAGE = pygame.image.load(path + "/crossbowman.png")
+        self.KNIGHT_IMAGE = pygame.image.load(self.path + "knight.bmp").convert()
+        self.PIKEMAN_IMAGE = pygame.image.load(self.path + "pikeman.bmp").convert()
+        self.CROSSBOWMAN_IMAGE = pygame.image.load(self.path + "crossbowman.bmp").convert()
 
-        self.screen =None
+    def afficher(self, map: Map, army1: Army, army2: Army):
+
+
+        self.screen.fill((0, 0, 0))
+        x_max, x_min, y_max, y_min = Affichage.get_sizeMap(map, army1, army2)
+        print(x_max, x_min, y_max, y_min)
+        tile_image = pygame.transform.scale(self.TILE_IMAGE,
+                                            (self.tile_size * self.zoom_factor, self.tile_size * self.zoom_factor))
+
+        for x in range(int(x_min) - 1, int(x_max) + 1,10):
+            for y in range(int(y_min) - 1, int(y_max) + 1,10):
+                iso_x, iso_y = self.convert_to_iso((x,y))
+                self.screen.blit(self.TILE_IMAGE, (iso_x, iso_y))
+        # Mise à jour de l'écran
+        pygame.display.flip()
+
+        sleep(0.1)
+
+
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.path = args[0]
 
 
     def handle_input(self):

@@ -22,11 +22,60 @@ Legend (example):
   C = Crossbowman
 
 This loader returns a tuple of Army instance and optionally lists of spawned units.
-"""
+
 def load_mirrored_army_from_file(path: str) -> tuple[Army, Army] :
     #Cette fonction recupère un ficher, structurer correctement et génère une armée et une armée mirroir
     pass
+"""
+from backend.Class.Army import Army
+from backend.Class.Units import Unit
 
+def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
+    army1 = Army()
+    army2 = Army()
+    with open(path, "r", encoding="utf-8") as f:
+        
+        # 1. RÉCUPÉRATION DES DIMENSIONS
+        
+        line_header = f.readline().strip()
+        if not line_header:
+            return army1, army2
+        
+        # On extrait x_max (la largeur) pour savoir où placer le miroir
+        x_max = int(line_header.split(';')[0])
+        
+        # 2. PARCOURS DE LA GRILLE (Ligne par ligne)
+        
+        for y, line in enumerate(f):
+            line = line.strip() # On nettoie la ligne des retours à la ligne (\n)
+            
+            
+            for x, char in enumerate(line):
+                
+                # On vérifie si le caractère correspond à une unité connue
+                if char in "KPC":
+                    
+                    # --- CRÉATION JOUEUR 1 ---
+                   
+                    pos1 = (float(x), float(y))
+                   
+                    u1 = Unit(100, 10, 5, 2, 1, 1, position=pos1)
+                    # add_unit lie l'unité à army1 et met à jour u1.army
+                    army1.add_unit(u1)
+
+                    # --- CRÉATION JOUEUR 2 (LE MIROIR) ---
+                    
+                    
+                    x_mirror = float(x_max - 1 - x)
+                    pos2 = (x_mirror, float(y)) # 'y' reste le même (symétrie horizontale)
+                    
+                    # Instance de l'unité J2 (indépendante de u1)
+                    u2 = Unit(100, 10, 5, 2, 1, 1, position=pos2)
+                    
+                    army2.add_unit(u2)
+
+   
+    return army1, army2
 """"
 Map file format (example):
 20;5

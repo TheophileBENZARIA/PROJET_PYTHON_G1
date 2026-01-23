@@ -129,11 +129,14 @@ class Army:
                 unit.cooldown -= 1
 
     def fight(self,map:Map, otherArmy ) :
-        
-        targets = self.general.getTargets(map, otherArmy)
-        orders = self.testTargets(targets,map,otherArmy)
 
+
+        targets = self.general.getTargets(map, otherArmy)
+        print("targets" ,targets)
+        orders = self.testTargets(targets,map,otherArmy)
+        print("orders", orders)
         self.execOrder(orders, otherArmy)
+        print("executer")
 
 
     """

@@ -9,20 +9,21 @@ class Army:
 
         self.gameMode=None
         self.general = None
-        self.__units = []  # list of Unit objects
+        self.units = []  # list of Unit objects
 
     def add_unit(self, unit: Unit):
         unit.army = self
-        self.__units.append(unit)
+        self.units.append(unit)
+
 
     def isEmpty(self):
         return len(self.living_units()) <= 0
 
     def living_units(self):
-        return [u for u in self.__units if u.is_alive()]
+        return [u for u in self.units if u.is_alive()]
 
     def dead_units(self):
-        return [u for u in self.__units if not u.is_alive()]
+        return [u for u in self.units if not u.is_alive()]
 
 
     def testTargets(self, targets, map: Map, otherArmy ):
@@ -129,13 +130,16 @@ class Army:
                 unit.cooldown -= 1
 
     def fight(self,map:Map, otherArmy ) :
-
+        print("me",len(self.living_units()), len(otherArmy.living_units()))
 
         targets = self.general.getTargets(map, otherArmy)
+        print("me", len(self.living_units()), len(otherArmy.living_units()))
         print("targets" ,targets)
         orders = self.testTargets(targets,map,otherArmy)
+        print("me", len(self.living_units()), len(otherArmy.living_units()))
         print("orders", orders)
         self.execOrder(orders, otherArmy)
+        print("me", len(self.living_units()), len(otherArmy.living_units()))
         print("executer")
 
 

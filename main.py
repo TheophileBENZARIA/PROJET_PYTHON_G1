@@ -209,13 +209,13 @@ def main():
         gameMode.army1 = army1
         gameMode.army2 = army2
 
-        general1 = general_from_name(args.general1)
-        general2 = general_from_name(args.general2)
+        general1 = general_from_name(args.general1)()
+        general2 = general_from_name(args.general2)()
 
-        army1.general = general1()
-        army1.general.army = army1
-        army2.general = general2()
-        army2.general.army = army2
+        army1.general = general1
+        general1.army = army1
+        army2.general = general2
+        general2.army = army2
 
         gameMode.map = map
 
@@ -226,7 +226,6 @@ def main():
             affichage = Screen()
 
         gameMode.affichage = affichage
-
 
         choice = input("Do you want to save this battle? (y/n): ")
         if choice. lower().startswith("y"):

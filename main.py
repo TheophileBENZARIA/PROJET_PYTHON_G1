@@ -5,6 +5,7 @@ from backend.Utils.class_by_name import general_from_name, get_available_general
 from backend.Utils.file_loader import load_mirrored_army_from_file, load_map_from_file
 from frontend.Graphics.PyScreen import PyScreen
 from frontend.Terminal import Screen
+from frontend.Terminal.NoAffiche import NoAffiche
 
 
 def main():
@@ -218,7 +219,7 @@ def main():
 
         gameMode.map = map
 
-        affichage=None
+        affichage=NoAffiche()
         if args.use_pygame :
             affichage = PyScreen(args.assets_dir)
         elif args.use_curses :

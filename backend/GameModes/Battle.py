@@ -23,7 +23,7 @@ class Battle(GameMode):
             print("army2 fight ok")
             self.save()
             print("save ok")
-            self.affichage.afficher(map,army1=self.army1, army2=self.army2)
+            self.affichage.afficher(self.map, army1=self.army1, army2=self.army2)
             print("affichage")
             self.tick+=1
 

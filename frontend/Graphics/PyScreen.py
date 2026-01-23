@@ -2,6 +2,9 @@ import pygame
 
 from backend.Class.Army import Army
 from backend.Class.Map import Map
+from backend.Class.Units.Crossbowman import Crossbowman
+from backend.Class.Units.Knight import Knight
+from backend.Class.Units.Pikeman import Pikeman
 from frontend.Affichage import Affichage
 
 class PyScreen(Affichage) :
@@ -31,14 +34,20 @@ class PyScreen(Affichage) :
                 self.screen.blit(tile_image, rect.topleft)
 
         for unit in army1.living_units()+army2.living_units():
-            iso_coor = self.convert_to_iso(entity["coor"])
+            iso_coor = self.convert_to_iso(unit.position)
 
-            if entity["type"] is "Knight":
-                tile_image = pygame.transform.scale(self.KNIGHT_IMAGE, (self.tile_size * self.zoom_factor,
-                                                                        self.tile_size * self.zoom_factor))
-            rect = tile_image.get_rect(center=iso_coor)
+            if isinstance(unit, Knight):
+                IMAGE = self.KNIGHT_IMAGE
+            if isinstance(unit, Pikeman):
+                IMAGE = self.PIKEMAN_IMAGE
+            if isinstance(unit, Crossbowman):
+                IMAGE = self.CROSSBOWMAN_IMAGE
+
+
+            unit_image = pygame.transform.scale(IMAGE, (self.tile_size * self.zoom_factor,self.tile_size * self.zoom_factor))
+            rect = unit_image.get_rect(center=iso_coor)
             self.screen.blit(tile_image, rect.topleft)
-
+            """
             bar_width = 40 / self.zoom_factor
             bar_height = 6 / self.zoom_factor
             bar_x = iso_coor[0]
@@ -58,6 +67,7 @@ class PyScreen(Affichage) :
                 (0, 255, 0),
                 (bar_x, bar_y, bar_width * health_ratio, bar_height)
             )
+            """
 
         pygame.display.flip()
 

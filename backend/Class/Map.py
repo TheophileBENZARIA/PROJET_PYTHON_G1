@@ -1,5 +1,4 @@
 from backend.Class.Obstacles.Obstacle import Obstacle
-from typing import List, Dict, Any
 
 
 class Map:

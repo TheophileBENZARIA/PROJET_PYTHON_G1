@@ -1,4 +1,5 @@
 import argparse
+import os
 
 from backend.GameModes.Battle import Battle
 from backend.Utils.class_by_name import general_from_name, get_available_generals
@@ -55,10 +56,12 @@ def main():
         "--pygame", action="store_true", dest="use_pygame",
         help="Use pygame graphical display if available"
     )
+    """
     run_parser.add_argument(
         "--assets_dir", type=str, default="frontend/Graphics/pygame_assets",
         help="Directory containing pygame assets (tiles/sprites)"
     )
+    """
 
     # ==================== LANCHESTER ====================
     lan_parser = subparsers.add_parser("lanchester", help="Run a Lanchester scenario (N vs 2N)")
@@ -221,7 +224,7 @@ def main():
 
         affichage=NoAffiche()
         if args.use_pygame :
-            affichage = PyScreen(args.assets_dir)
+            affichage = PyScreen(os.getcwd()+"/frontend/Graphics/pygame_assets/")
         elif args.use_curses :
             affichage = Screen()
 

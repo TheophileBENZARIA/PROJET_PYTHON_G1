@@ -1,121 +1,219 @@
 # frontend/Terminal/Screen.py
 import curses
-import sys
-from time import sleep
+import html
+import webbrowser
+from datetime import datetime
+from pathlib import Path
 from typing import List, Optional
 
 from frontend.Affichage import Affichage
 
 
-# The screen expects:
-#  - a 2D grid (list of rows) where each cell is an object with __str__ returning a printable char (UniteTerm)
-#  - and an optional list of recent event strings to render in a compact log
 class Screen(Affichage):
-    def __init__(self, stdsrc: curses.window):
-        self.std = stdsrc
-        self.x = 0  # viewport x offset
-        self.y = 0  # viewport y offset
+    """
+    Curses-based terminal renderer that satisfies the "terminal map view" requirement.
+    - Uses ASCII symbols to show units/obstacles.
+    - Allows scrolling with arrows or ZQSD (upper-case for faster moves).
+    - Press P to pause/resume battle ticks.
+    - Press TAB to pause and dump an HTML snapshot of every unit/general, then opens it in the browser.
+    - Press ESC or Q to exit the terminal view.
+    """
 
-        # grid holds the last grid snapshot (list[list[...]])
-        self.grille = []  # grid[y][x]
+    OBSTACLE_CHAR = "#"
 
-        # compact event log (list of strings). newest last.
+    def __init__(self):
+        super().__init__()
+        self.std: Optional[curses.window] = None
+        self.x = 0
+        self.y = 0
+        self.grille: List[List[str]] = []
         self.log_lines: List[str] = []
+        self.status_msg = ""
+        self.paused = False
+        self.uses_pygame = False  # helps Battle know we don't need pygame clock
+        self.snapshot_dir = Path("snapshots")
+        self.snapshot_dir.mkdir(parents=True, exist_ok=True)
+        self._grid_width = 0
+        self._grid_height = 0
 
-    def start(self):
-        curses.curs_set(0)
-        # non-blocking getch
+    # ------------------------------------------------------------------ #
+    # Lifecycle
+    # ------------------------------------------------------------------ #
+    def initialiser(self):
+        if self.std is not None:
+            return
+        self.std = curses.initscr()
+        curses.noecho()
+        curses.cbreak()
         self.std.nodelay(True)
         self.std.keypad(True)
-        # use color pair if terminal supports color
         if curses.has_colors():
             curses.start_color()
             curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
             curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_WHITE)
+        self.status_msg = "Terminal ready (Arrows/ZQSD scroll, P pause, TAB snapshot, ESC quit)"
+
+    # Legacy helper so old callers that expect `start()` still work.
+    def start(self):
+        self.initialiser()
+
+    def shutdown(self):
+        if self.std is None:
+            return
+        try:
+            curses.nocbreak()
+            self.std.keypad(False)
+            curses.echo()
+            curses.endwin()
+        finally:
+            self.std = None
 
     def getch(self):
-        """Handle a keypress. Returns True if the caller should exit."""
+        if self.std is None:
+            return None
         key = self.std.getch()
-        if key == curses.ERR:
-            return False
+        return None if key == curses.ERR else key
 
-        # Navigation: keep viewport in bounds when possible
-        # UP
-        if key == curses.KEY_UP or key == ord('k'):
-            if self.y > 0:
-                self.y -= 1
-        # DOWN
-        elif key == curses.KEY_DOWN or key == ord('j'):
-            # allow always increment; caller will clamp if grid smaller
-            self.y += 1
-        # LEFT
-        elif key == curses.KEY_LEFT or key == ord('h'):
-            if self.x > 0:
-                self.x -= 1
-        # RIGHT
-        elif key == curses.KEY_RIGHT or key == ord('l'):
-            self.x += 1
-        elif key == ord('q') or key == ord('Q'):
-            # signal exit to caller
-            return True
+    # ------------------------------------------------------------------ #
+    # Battle hooks
+    # ------------------------------------------------------------------ #
+    def is_paused(self) -> bool:
+        return self.paused
 
-        return False
+    def afficher(self, map, army1, army2):
+        if self.std is None:
+            self.initialiser()
 
+        grid = self._build_grid(map, army1, army2)
+        self.actualiser_grille(grid)
+        self.actualiser_log(self._build_log_lines(army1, army2))
+
+        action = self.handle_input(map, army1, army2)
+        if action == "quit":
+            return "QUIT"
+
+        self.afficher_grille()
+        return None
+
+    # ------------------------------------------------------------------ #
+    # Grid construction helpers
+    # ------------------------------------------------------------------ #
+    def _build_grid(self, game_map, army1, army2):
+        width = self._resolve_width(game_map, army1, army2)
+        height = self._resolve_height(game_map, army1, army2)
+        self._grid_width = width
+        self._grid_height = height
+
+        grid = [[ "." for _ in range(width)] for _ in range(height)]
+
+        # Obstacles (approximate circle footprint)
+        for obstacle in getattr(game_map, "obstacles", []):
+            self._mark_obstacle(grid, obstacle)
+
+        # Units
+        for unit in army1.living_units():
+            self._place_unit(grid, unit, player_one=True)
+        for unit in army2.living_units():
+            self._place_unit(grid, unit, player_one=False)
+
+        return grid
+
+    def _resolve_width(self, game_map, army1, army2):
+        width = getattr(game_map, "width", 0)
+        if width:
+            return int(width)
+        use_army1 = army1 or (self.gameMode.army1 if self.gameMode else None)
+        use_army2 = army2 or (self.gameMode.army2 if self.gameMode else None)
+        x_max, x_min, _, _ = Affichage.get_sizeMap(game_map, use_army1, use_army2)
+        return max(1, int(x_max - x_min + 1))
+
+    def _resolve_height(self, game_map, army1, army2):
+        height = getattr(game_map, "height", 0)
+        if height:
+            return int(height)
+        use_army1 = army1 or (self.gameMode.army1 if self.gameMode else None)
+        use_army2 = army2 or (self.gameMode.army2 if self.gameMode else None)
+        _, _, y_max, y_min = Affichage.get_sizeMap(game_map, use_army1, use_army2)
+        return max(1, int(y_max - y_min + 1))
+
+    def _clamp_indices(self, x, y):
+        ix = max(0, min(self._grid_width - 1, x))
+        iy = max(0, min(self._grid_height - 1, y))
+        return ix, iy
+
+    def _mark_obstacle(self, grid, obstacle):
+        pos = getattr(obstacle, "position", None)
+        size = getattr(obstacle, "size", 1)
+        if not pos:
+            return
+        radius = max(1, int(round(size)))
+        ox = int(round(pos[0]))
+        oy = int(round(pos[1]))
+        for dx in range(-radius, radius + 1):
+            for dy in range(-radius, radius + 1):
+                if dx * dx + dy * dy > radius * radius:
+                    continue
+                ix, iy = self._clamp_indices(ox + dx, oy + dy)
+                grid[iy][ix] = self.OBSTACLE_CHAR
+
+    def _place_unit(self, grid, unit, player_one: bool):
+        if unit.position is None:
+            return
+        ux = int(round(unit.position[0]))
+        uy = int(round(unit.position[1]))
+        ix, iy = self._clamp_indices(ux, uy)
+        grid[iy][ix] = self._symbol_for_unit(unit, player_one)
+
+    def _symbol_for_unit(self, unit, player_one: bool):
+        mapping = {
+            "Knight": "K",
+            "Pikeman": "P",
+            "Crossbowman": "C",
+        }
+        try:
+            base = mapping.get(unit.unit_type(), unit.unit_type()[0].upper())
+        except Exception:
+            base = "U"
+        return base if player_one else base.lower()
+
+    # ------------------------------------------------------------------ #
+    # Rendering helpers
+    # ------------------------------------------------------------------ #
     def actualiser_grille(self, grille: List[List[object]]):
-        """Replace the internal grid snapshot (grid indexed as [y][x])."""
         self.grille = grille
-
-        # Clamp viewport to grid size
         if not self.grille:
             self.x = 0
             self.y = 0
             return
         height = len(self.grille)
-        width = len(self.grille[0]) if height > 0 else 0
-        if self.y < 0:
-            self.y = 0
-        if self.x < 0:
-            self.x = 0
+        width = len(self.grille[0])
+        self._grid_height = height
+        self._grid_width = width
+        self.x = max(0, min(self.x, max(0, width - 1)))
+        self.y = max(0, min(self.y, max(0, height - 1)))
 
     def actualiser_log(self, lines: Optional[List[str]]):
-        """Set the list of event strings (most recent last). We keep only the last N to fit screen."""
         if not lines:
             self.log_lines = []
             return
-        # keep last 5 events (this is intentionally compact)
         self.log_lines = list(lines)[-5:]
 
     def afficher_grille(self):
-        """Draw the current grid snapshot to the curses window using a viewport that fits the terminal.
-           A compact event log (few lines) is displayed at the bottom without taking too much space.
-        """
+        if self.std is None:
+            return
         self.std.erase()
         maxy, maxx = self.std.getmaxyx()
 
-        # reserve lines:
-        help_height = 1  # single-line help at very bottom
-        log_height = min(5, max(0, maxy // 6))  # prefer up to 5 lines for log, adapt to small terminals
-        grid_area_height = maxy - help_height - log_height - 2  # top border + bottom border
-
+        help_height = 1
+        status_height = 1
+        log_height = min(5, max(0, maxy // 6))
+        grid_area_height = maxy - help_height - status_height - log_height - 2
         usable_h = max(1, grid_area_height)
         usable_w = max(2, maxx - 2)
 
-        if usable_h <= 0 or usable_w <= 0:
-            try:
-                self.std.addstr(0, 0, "Terminal too small")
-                self.std.refresh()
-            except curses.error:
-                pass
-            return
-
-        # grid may be empty
         if not self.grille:
             try:
-                self.std.addstr(1, 1, "." * min(usable_w, 1))
-            except curses.error:
-                pass
-            try:
-                self.std.addstr(maxy - 2, 0, "Q pour quitter")
+                self.std.addstr(0, 0, "No data")
             except curses.error:
                 pass
             self.std.refresh()
@@ -123,66 +221,193 @@ class Screen(Affichage):
 
         grid_h = len(self.grille)
         grid_w = len(self.grille[0])
-
-        # clamp offsets so viewport is valid
-        if self.y > max(0, grid_h - usable_h):
-            self.y = max(0, grid_h - usable_h)
-        if self.x > max(0, grid_w - usable_w):
-            self.x = max(0, grid_w - usable_w)
-
+        self.y = max(0, min(self.y, max(0, grid_h - usable_h)))
+        self.x = max(0, min(self.x, max(0, grid_w - usable_w)))
         min_y = self.y
         max_y = min(grid_h, self.y + usable_h)
         min_x = self.x
         max_x = min(grid_w, self.x + usable_w)
 
-        # draw top border
-        top_row = "_" * (max_x - min_x)
+        top_row = "-" * (max_x - min_x)
         try:
             self.std.addstr(0, 1, top_row[:usable_w])
         except curses.error:
             pass
 
-        # draw grid contents
         for row_idx, y in enumerate(range(min_y, max_y), start=1):
-            line = ""
+            line_chars = []
             for x in range(min_x, max_x):
                 cell = self.grille[y][x]
-                ch = str(cell)
+                ch = str(cell) if cell is not None else "."
                 if not ch:
                     ch = "."
-                ch = ch[0]
-                line += ch
+                line_chars.append(ch[0])
+            line = "".join(line_chars)
             try:
                 self.std.addstr(row_idx, 1, line[:usable_w])
             except curses.error:
                 pass
 
-        # bottom border for the grid area
-        bottom_row = "‾" * (max_x - min_x)
+        bottom_row = "-" * (max_x - min_x)
         try:
             self.std.addstr(1 + (max_y - min_y), 1, bottom_row[:usable_w])
         except curses.error:
             pass
 
-        # draw compact log lines below the grid area
         log_start_row = 2 + (max_y - min_y)
         for i, logline in enumerate(self.log_lines[-log_height:]):
             row = log_start_row + i
-            # keep log lines concise: truncate to available width
             text = str(logline)[:usable_w]
             try:
-                # use a dim attribute if available
-                if curses.has_colors():
-                    self.std.addstr(row, 1, text.ljust(usable_w)[:usable_w])
-                else:
-                    self.std.addstr(row, 1, text.ljust(usable_w)[:usable_w], curses.A_DIM)
+                self.std.addstr(row, 1, text.ljust(usable_w)[:usable_w])
             except curses.error:
                 pass
 
-        # UI help line
+        status_row = maxy - 2
+        help_row = maxy - 1
+        status_text = (self.status_msg or "").ljust(maxx - 1)
+        help_text = "ESC quit | Arrows/ZQSD (Shift fast) | P pause | TAB snapshot"
         try:
-            self.std.addstr(maxy - 1, 0, " Q to quit    use arrows or hjkl to navigate ")
+            self.std.addstr(status_row, 0, status_text[:maxx - 1])
+            self.std.addstr(help_row, 0, help_text[:maxx - 1])
         except curses.error:
             pass
 
         self.std.refresh()
+
+    # ------------------------------------------------------------------ #
+    # Input & snapshot
+    # ------------------------------------------------------------------ #
+    def handle_input(self, game_map, army1, army2):
+        if self.std is None:
+            return None
+        action = None
+        while True:
+            key = self.std.getch()
+            if key == curses.ERR:
+                break
+
+            if key in (ord('p'), ord('P')):
+                self.paused = not self.paused
+                state = "Paused" if self.paused else "Running"
+                self.set_status(state)
+            elif key == 9:  # TAB
+                self.paused = True
+                path = self._write_snapshot(game_map, army1, army2)
+                self.set_status(f"Snapshot saved to {path}")
+                try:
+                    webbrowser.open(path.resolve().as_uri(), new=2)
+                except Exception:
+                    pass
+            elif key == 27:  # ESC quits the terminal view
+                action = "quit"
+                break
+            else:
+                self._handle_scroll(key)
+        return action
+
+    def _handle_scroll(self, key):
+        step = 1
+        if 0 <= key <= 255:
+            ch = chr(key)
+            if ch.isalpha() and ch.isupper():
+                step = 5
+
+        if key in (curses.KEY_UP, ord('k'), ord('K'), ord('z'), ord('Z')):
+            self.y = max(0, self.y - step)
+        elif key in (curses.KEY_DOWN, ord('j'), ord('J'), ord('s'), ord('S')):
+            self.y = min(max(0, self._grid_height - 1), self.y + step)
+        elif key in (curses.KEY_LEFT, ord('h'), ord('H'), ord('q'), ord('Q')):
+            self.x = max(0, self.x - step)
+        elif key in (curses.KEY_RIGHT, ord('l'), ord('L'), ord('d'), ord('D')):
+            self.x = min(max(0, self._grid_width - 1), self.x + step)
+
+    def _write_snapshot(self, game_map, army1, army2):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        path = self.snapshot_dir / f"battle_snapshot_{timestamp}.html"
+
+        general1 = getattr(army1, "general", None)
+        general2 = getattr(army2, "general", None)
+        tick = getattr(self.gameMode, "tick", 0)
+
+        def unit_rows(owner_name, army):
+            rows = []
+            for unit in army.units:
+                status = "Alive" if unit.is_alive() else "Dead"
+                pos = unit.position if unit.position is not None else ("?", "?")
+                rows.append(
+                    "<tr>"
+                    f"<td>{html.escape(owner_name)}</td>"
+                    f"<td>{html.escape(unit.unit_type())}</td>"
+                    f"<td>{pos[0]}</td><td>{pos[1]}</td>"
+                    f"<td>{unit.hp}</td>"
+                    f"<td>{unit.attack}</td>"
+                    f"<td>{unit.armor}</td>"
+                    f"<td>{unit.range}</td>"
+                    f"<td>{unit.cooldown}</td>"
+                    f"<td>{status}</td>"
+                    "</tr>"
+                )
+            return "\n".join(rows)
+
+        html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Battle snapshot - tick {tick}</title>
+  <style>
+    body {{ font-family: Arial, sans-serif; background: #111; color: #eee; }}
+    table {{ border-collapse: collapse; width: 100%; margin-top: 1rem; }}
+    th, td {{ border: 1px solid #444; padding: 4px 6px; text-align: center; }}
+    th {{ background: #222; }}
+    caption {{ margin-bottom: 0.5rem; font-weight: bold; }}
+  </style>
+</head>
+<body>
+  <h1>Battle snapshot</h1>
+  <p>Tick: {tick}</p>
+  <p>Army 1 General: {html.escape(general1.__class__.__name__ if general1 else "No general")}</p>
+  <p>Army 2 General: {html.escape(general2.__class__.__name__ if general2 else "No general")}</p>
+  <table>
+    <caption>Units</caption>
+    <thead>
+      <tr>
+        <th>Army</th><th>Type</th><th>X</th><th>Y</th>
+        <th>HP</th><th>Attack</th><th>Armor</th><th>Range</th>
+        <th>Cooldown</th><th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {unit_rows("Army 1", army1)}
+      {unit_rows("Army 2", army2)}
+    </tbody>
+  </table>
+</body>
+</html>
+"""
+        path.write_text(html_content, encoding="utf-8")
+        return path
+
+    # ------------------------------------------------------------------ #
+    # Status helpers
+    # ------------------------------------------------------------------ #
+    def set_status(self, message: str):
+        self.status_msg = message or ""
+
+    def clear_status(self):
+        self.status_msg = ""
+
+    def _build_log_lines(self, army1, army2):
+        tick = getattr(self.gameMode, "tick", 0)
+        lines = [
+            f"Tick {tick} | {'PAUSED' if self.paused else 'RUNNING'}",
+            f"Army1: {len(army1.living_units())}/{len(army1.units)} alive",
+            f"Army2: {len(army2.living_units())}/{len(army2.units)} alive",
+        ]
+        general1 = getattr(army1, "general", None)
+        general2 = getattr(army2, "general", None)
+        if general1:
+            lines.append(f"G1: {general1.__class__.__name__}")
+        if general2:
+            lines.append(f"G2: {general2.__class__.__name__}")
+        return lines

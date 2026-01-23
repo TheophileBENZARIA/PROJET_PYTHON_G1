@@ -47,7 +47,7 @@ def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
         # 2. PARCOURS DE LA GRILLE (Ligne par ligne)
         
         for y, line in enumerate(f):
-            line = line.strip() # On nettoie la ligne des retours à la ligne (\n)
+            line = line.replace("\n","").replace(" ", "") # On nettoie la ligne des retours à la ligne (\n) et des espaces
             
             
             for x, char in enumerate(line):
@@ -59,14 +59,17 @@ def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
                 elif char == 'P' : unit_class = Pikeman
                 if unit_class :
                     u1 = unit_class((x,y))
-                    u2 = unit_class((x,-y))
+                    # Mirror horizontally: army2 units go to the opposite side
+                    mirrored_x = x_max - 1 - x
+                    u2 = unit_class((mirrored_x, y))
 
                     army1.add_unit(u1)
                     army2.add_unit(u2)
 
    
     return army1, army2
-""""
+
+"""
 Map file format (example):
 20;5
 ####################
@@ -86,20 +89,31 @@ This loader returns a Map instance and optionally lists of spawned units.
 """
 def load_map_from_file(path: str) -> Map:
     """
-    with open(path, "r", encoding="utf-8") as f:
-        x_max, y_max = f.readline().replace("\n", "").split(";")
-        x_max, y_max = int(x_max), int(y_max)
-        lines = [line.rstrip("\n") for line in f.readlines() if line.strip() != ""]
-
-    for y in range(y_max):
-        for x in range(x_max):
-            ch = None
-            try:
-                ch = lines[y][x]
-            except:
-                break
+    Loads a map from a file. The map file format is:
+    width;height
+    (map content - currently just reads dimensions)
     """
-    return Map()
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            line_header = f.readline().strip()
+            if line_header:
+                # Parse dimensions from header (format: "width;height")
+                parts = line_header.split(';')
+                if len(parts) >= 2:
+                    width = int(parts[0])
+                    height = int(parts[1])
+                    return Map(width, height)
+                else:
+                    # Default if format is wrong
+                    return Map(100, 100)
+            else:
+                return Map(100, 100)
+    except FileNotFoundError:
+        print(f"Warning: Map file '{path}' not found. Using default map (100x100).")
+        return Map(100, 100)
+    except Exception as e:
+        print(f"Warning: Error loading map file '{path}': {e}. Using default map (100x100).")
+        return Map(100, 100)
 
 
 """

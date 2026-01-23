@@ -45,14 +45,14 @@ class Army:
                 dy = ty - uy
                 dist2 = dx * dx + dy * dy
 
-                print(unit, target, dist2, unit.range,dist2 <= unit.range **2)
+                #print(unit, target, dist2, unit.range,dist2 <= unit.range **2)
 
                 # ATTAQUE
                 if dist2 <= unit.range **2 :
                     if unit.cooldown <= 0:
                         actions.append(Action(unit, "attack", target))
                 else:
-                    vector = (dx/(dist2**0.5)*unit.speed, dy/(dist2**0.5)*unit.speed)
+                    vector = (ux+dx/(dist2**0.5)*unit.speed, uy+dy/(dist2**0.5)*unit.speed)
                     """
                     # DÉPLACEMENT (A*)
                     path = find_path(
@@ -122,22 +122,33 @@ class Army:
                 """
             # DÉPLACEMENT
             elif action.kind == "move":
-                unit.position = action.target
+                new_pos = action.target
+                # Clamp position to map bounds if map has dimensions
+                if unit.army and unit.army.gameMode and unit.army.gameMode.map:
+                    game_map = unit.army.gameMode.map
+                    if hasattr(game_map, 'width') and hasattr(game_map, 'height'):
+                        new_x = max(0, min(new_pos[0], game_map.width - 1))
+                        new_y = max(0, min(new_pos[1], game_map.height - 1))
+                        unit.position = (new_x, new_y)
+                    else:
+                        unit.position = new_pos
+                else:
+                    unit.position = new_pos
 
             
 
     def fight(self,map:Map, otherArmy ) :
-        print("me",len(self.living_units()), len(otherArmy.living_units()))
+        #print("me",len(self.living_units()), len(otherArmy.living_units()))
 
         targets = self.general.getTargets(map, otherArmy)
-        print("me", len(self.living_units()), len(otherArmy.living_units()))
-        print("targets" ,targets)
+        #print("me", len(self.living_units()), len(otherArmy.living_units()))
+        #print("targets" ,targets)
         orders = self.testTargets(targets,map,otherArmy)
-        print("me", len(self.living_units()), len(otherArmy.living_units()))
-        print("orders", orders)
+        #print("me", len(self.living_units()), len(otherArmy.living_units()))
+        #print("orders", orders)
         self.execOrder(orders, otherArmy)
-        print("me", len(self.living_units()), len(otherArmy.living_units()))
-        print("executer")
+        #print("me", len(self.living_units()), len(otherArmy.living_units()))
+        #print("executer")
 
 
     """

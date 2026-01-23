@@ -36,11 +36,13 @@ class PyScreen(Affichage) :
         self.CROSSBOWMAN_IMAGE = pygame.image.load(self.path + "crossbowman.bmp").convert_alpha()
 
     def afficher(self, map: Map, army1: Army, army2: Army):
-
+        # Handle input for camera movement and zoom
+        if self.handle_input() is False:
+            return False
 
         self.screen.fill((0, 0, 0))
         x_max, x_min, y_max, y_min = Affichage.get_sizeMap(map, army1, army2)
-        print(x_max, x_min, y_max, y_min)
+        # print(x_max, x_min, y_max, y_min)  # Debug output - commented out
         tile_image = pygame.transform.scale(self.TILE_IMAGE,
                                             (self.tile_size * self.zoom_factor, self.tile_size * self.zoom_factor))
 
@@ -52,6 +54,8 @@ class PyScreen(Affichage) :
         # Mise à jour de l'écran
 
         for unit in army1.living_units()+army2.living_units():
+            if unit.position is None:
+                continue
             iso_x, iso_y = self.convert_to_iso(unit.position)
             IMAGE = self.PIKEMAN_IMAGE
             if isinstance(unit, Knight):
@@ -64,7 +68,7 @@ class PyScreen(Affichage) :
 
             unit_image = pygame.transform.scale(IMAGE, (unit.size * self.zoom_factor,unit.size * self.zoom_factor))
             rect = unit_image.get_rect(center=(iso_x, iso_y ))
-            self.screen.blit(tile_image, rect.topleft)
+            self.screen.blit(unit_image, rect.topleft)
 
         pygame.display.flip()
 
@@ -74,11 +78,24 @@ class PyScreen(Affichage) :
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.path = args[0]
+        if len(args) > 0:
+            self.path = args[0] if args[0].endswith('/') or args[0].endswith('\\') else args[0] + '/'
+        else:
+            self.path = "frontend/Graphics/pygame_assets/"
 
 
     def handle_input(self):
-        pygame.event.get()
+        # Process events first (for QUIT and KEYDOWN events)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    return False
+        
+        # Then check for held keys (for continuous movement)
         keys = pygame.key.get_pressed()
         # Déplacement avec les flèches
         if keys[pygame.K_LEFT]:
@@ -99,7 +116,7 @@ class PyScreen(Affichage) :
         if keys[pygame.K_2]:
             self.zoom_factor /= 1.05
 
-        if keys[pygame.K_ESCAPE]: quit()
+        return True
 
 
     def convert_to_iso(self,coor : tuple):

@@ -28,9 +28,17 @@ class Battle(GameMode):
             print("affichage")
             self.tick+=1
         """
+        import pygame
+        clock = pygame.time.Clock()
         self.affichage.afficher(self.map, army1=self.army1, army2=self.army2)
-        while True :
-            pass
+        running = True
+        while running:
+            # Update display (this will handle input and events internally)
+            result = self.affichage.afficher(self.map, army1=self.army1, army2=self.army2)
+            # If afficher returns False, it means user wants to quit
+            if result is False:
+                running = False
+            clock.tick(60)  # Limit to 60 FPS
 
 
 

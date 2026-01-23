@@ -47,7 +47,7 @@ def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
         # 2. PARCOURS DE LA GRILLE (Ligne par ligne)
         
         for y, line in enumerate(f):
-            line = line.replace("\n","") # On nettoie la ligne des retours à la ligne (\n)
+            line = line.replace("\n","").replace(" ", "") # On nettoie la ligne des retours à la ligne (\n) et des espaces
             
             
             for x, char in enumerate(line):
@@ -59,14 +59,17 @@ def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
                 elif char == 'P' : unit_class = Pikeman
                 if unit_class :
                     u1 = unit_class((x,y))
-                    u2 = unit_class((x,-y))
+                    # Mirror horizontally: army2 units go to the opposite side
+                    mirrored_x = x_max - 1 - x
+                    u2 = unit_class((mirrored_x, y))
 
                     army1.add_unit(u1)
                     army2.add_unit(u2)
 
    
     return army1, army2
-""""
+
+"""
 Map file format (example):
 20;5
 ####################

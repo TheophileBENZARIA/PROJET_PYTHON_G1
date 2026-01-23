@@ -209,12 +209,12 @@ def main():
         gameMode.army1 = army1
         gameMode.army2 = army2
 
-        general1_cls = general_from_name(args.general1)
-        general2_cls = general_from_name(args.general2)
+        general1 = general_from_name(args.general1)
+        general2 = general_from_name(args.general2)
 
-        army1.general = general1_cls()
+        army1.general = general1()
         army1.general.army = army1
-        army2.general = general2_cls()
+        army2.general = general2()
         army2.general.army = army2
 
         gameMode.map = map

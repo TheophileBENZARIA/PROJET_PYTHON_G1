@@ -1,33 +1,26 @@
-from abc import ABC
-
 from General import General
-from backend.Utils.pathfinding import find_path
+from backend.Class.Army import Army
+from backend.Class.Map import Map
+
 
 class CaptainBraindead(General):
     """
-    A reactive general that doesn't proactively seek enemies, but units will
-    retaliate against attackers they remember (threat memory system).
-    Units pursue enemies that have attacked them, even ranged attackers.
+    This general gives no proactive orders: a unit only retaliates against the
+    last enemy that hit it. If no one attacked the unit yet, it receives no target.
     """
 
-    def getTargets(self, army, enemy_army, game_map):
-        """
-        For each unit, check if they have a threat in memory (someone who attacked them).
-        If so, move toward that threat to retaliate.
-        """
-        for unit in army.living_units():
-            if unit.position is None:
-                continue
+    def getTargets(self, map: Map, otherArmy: Army):
+        targets = []
 
-            # Check for priority threat (most recent attacker)
-            threat = unit.get_priority_threat()
+        enemy_units = set(otherArmy.living_units())
 
-            if threat is not None and threat.is_alive() and threat.position is not None:
-                # Unit has been attacked, pursue the attacker
-                self._move_toward_threat(unit, threat, game_map)
+        for unit in self.army.living_units():
+            last_attacker = getattr(unit, "last_attacker", None)
+            if last_attacker in enemy_units:
+                targets.append((unit, last_attacker))
+            else:
+                # Clean up stale references so next ticks don't keep checking dead enemies
+                if hasattr(unit, "last_attacker") and unit.last_attacker not in enemy_units:
+                    unit.last_attacker = None
 
-    @property
-    def name(self):
-        return "Captain Braindead"
-
-
+        return targets

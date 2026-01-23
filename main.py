@@ -21,16 +21,18 @@ def main():
 
     # ==================== RUN ====================
     run_parser = subparsers.add_parser("run", help="Run a new battle")
-    """
+
     run_parser.add_argument(
         "--ticks", "-t", type=int, default=None,
         help="Maximum ticks to run the battle (omit to run until end)"
     )
+    """
     run_parser.add_argument(
         "--delay", "-d", type=float, default=0.5,
         help="Delay (seconds) between ticks; set 0 for headless"
     )
     """
+
     run_parser.add_argument(
         "--general1", "-g1", type=str, default=None,
         help=f"Comma-separated list of generals.  Available: {', '.join(get_available_generals())}"
@@ -195,24 +197,29 @@ def main():
 
     args = parser.parse_args()
 
+    gameMode = None
     # ==================== MODE:  RUN ====================
+
     if args.mode == "run":
         battle = Battle()
+        battle.max_tick=args.ticks
+        gameMode = battle
+
         army1,army2 = load_mirrored_army_from_file(args.army_file)
         map = load_map_from_file(args.map_file)
 
-        army1.gameMode = battle
-        battle.army1 = army1
-        army2.gameMode = battle
-        battle.army2 = army2
+        army1.gameMode = gameMode
+        gameMode.army1 = army1
+        army2.gameMode = gameMode
+        gameMode.army2 = army2
 
         army1.general = General.general_from_name(args.general1)
         army1.general.army = army1
         army2.general = General.general_from_name(args.general2)
         army2.general.army = army2
 
-        map.gameMode = battle
-        battle.map = map
+        map.gameMode = gameMode
+        gameMode.map = map
 
         affichage=None
         if args.pygame :
@@ -220,17 +227,17 @@ def main():
         elif args.curses :
             affichage = Screen()
 
-        battle.affichage = affichage
-        affichage.gameMode = battle
+        gameMode.affichage = affichage
+        affichage.gameMode = gameMode
 
 
         choice = input("Do you want to save this battle? (y/n): ")
         if choice. lower().startswith("y"):
-            battle.isSave = True
+            gameMode.isSave = True
 
-        battle.launch()
-        battle.gameLoop()
-        battle.end()
+        gameMode.launch()
+        gameMode.gameLoop()
+        gameMode.end()
 
         """
     # ==================== MODE: LANCHESTER ====================

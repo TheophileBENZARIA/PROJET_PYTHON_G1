@@ -5,8 +5,7 @@ from backend.Class.Map import Map
 
 
 class Affichage(ABC) :
-
-    def __init__(self):
+    def __init__(self, *args):
         self.gameMode = None
 
     @abstractmethod

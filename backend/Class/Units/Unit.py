@@ -1,5 +1,8 @@
 import uuid
 from backend.Class.Army import Army
+from backend.Class.Units.Crossbowman import Crossbowman
+from backend.Class.Units.Knight import Knight
+from backend.Class.Units.Pikeman import Pikeman
 
 
 class Unit():
@@ -42,6 +45,18 @@ class Unit():
 
     def is_alive(self) -> bool:
         return self.hp > 0
+
+
+
+    @staticmethod
+    def unit_from_name(name: str):
+        UNIT_CLASSES = {
+            "knight": Knight,
+            "pikeman": Pikeman,
+            "crossbowman": Crossbowman,
+        }
+
+        return UNIT_CLASSES.get(name)
 
 """
     # Dans le init ---------------------------------------

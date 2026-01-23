@@ -1,404 +1,52 @@
-# main.py
-import backend
-import logging
 import argparse
-from typing import Optional, Dict, Tuple, List, Type
-from backend.generals import CaptainBraindead, MajorDaft, GeneralClever
-from backend.Class.battle import Battle
-from backend.Class.army import Army
-from backend.Utils.save_manager import (
-    save_battle_json,
-    load_battle_json,
-    save_battle_pickle,
-    load_battle_pickle,
-)
-from frontend. Terminal. terminal_view import print_map, launch_curses_battle
 
-# Import tournament system
-from backend.Utils.tournament_safe import (
-    run_tournament_cli,
-    get_available_scenarios,
-    get_available_generals,
-)
-
-# new pygame launcher import (graceful failure if pygame frontend not present)
-try:
-    from frontend.pygame_view import launch_pygame_battle
-except Exception:
-    launch_pygame_battle = None
-
-# new imports for interactive scenario construction
-from backend.Class.map import Map
-from backend.Class.Units import Knight, Pikeman, Crossbowman
-
-# Import Lanchester scenario generator
-from backend.Utils.scenarios import lanchester
-
-# available unit types (lowercase keys used internally)
-_UNIT_CLASSES = {
-    "knight": Knight,
-    "pikeman":  Pikeman,
-    "crossbowman": Crossbowman,
-}
-
-CASTLE_HP = 300
-
-
-def _place_castles_on_map(game_map:  Map):
-    """
-    Place a Player1 castle near the top center and a Player2 castle near the bottom center.
-    Castles are placed 'behind the troops' so top/bottom rows are used.
-    """
-    cx = game_map.width // 2
-    top_y = 0
-    bot_y = game_map.height - 1
-    # set building dicts with hp and owner
-    game_map.grid[cx][top_y]. building = {"type": "castle", "owner": "Player1", "hp": CASTLE_HP, "max_hp": CASTLE_HP}
-    game_map.grid[cx][bot_y].building = {"type": "castle", "owner": "Player2", "hp":  CASTLE_HP, "max_hp":  CASTLE_HP}
-
-
-def ask_for_composition_interactive() -> Dict[str, int]:
-    """
-    Prompt the user for the number of each available unit type, one by one.
-    """
-    print("Please select the number of units for one army (armies are mirrored).")
-    print("Enter a non-negative integer for each unit type.  Press Enter for 0.")
-    composition:  Dict[str, int] = {}
-
-    # keep a deterministic order for prompting
-    prompt_order = ["knight", "pikeman", "crossbowman"]
-
-    for key in prompt_order:
-        display_name = key.title()
-        while True:
-            try:
-                raw = input(f"{display_name}:  ").strip()
-            except EOFError:
-                raw = ""
-            if raw == "":
-                count = 0
-                break
-            try:
-                count = int(raw)
-                if count < 0:
-                    print("Please enter a non-negative integer.")
-                    continue
-                break
-            except ValueError:
-                print("Invalid number, please enter a non-negative integer (or press Enter for 0).")
-        if count > 0:
-            composition[key] = count
-
-    # If composition ended up empty, provide a small default so simulation runs
-    if not composition:
-        print("No units selected; using default composition:  Knight: 1, Crossbowman:1")
-        composition = {"knight": 1, "crossbowman": 1}
-
-    # show summary and confirm
-    print("\nSelected composition for one army:")
-    for name, cnt in composition.items():
-        print(f"  {name. title()}: {cnt}")
-    while True:
-        confirm = input("Proceed with this composition? (Y/n): ").strip().lower()
-        if confirm in ("", "y", "yes"):
-            break
-        if confirm in ("n", "no"):
-            print("Let's re-enter the composition.")
-            return ask_for_composition_interactive()
-        print("Please answer 'y' or 'n' (or press Enter for yes).")
-
-    return composition
-
-
-def _chunk_list(lst: List[Type], size: int) -> List[List[Type]]:
-    """Split list into chunks of at most size (preserving order)."""
-    return [lst[i:i + size] for i in range(0, len(lst), size)]
-
-
-def _place_default_terrain(game_map:  Map):
-    """
-    Add a few buildings and hills to the map so they are present at simulation start.
-    """
-    w, h = game_map.width, game_map.height
-
-    # Example building cluster in the middle of the map
-    building_coords = [
-        (w // 2 - 2, h // 2), (w // 2 - 1, h // 2),
-        (w // 2, h // 2), (w // 2 + 1, h // 2),
-        (w // 2, h // 2 - 3),
-    ]
-
-    for x, y in building_coords:
-        if 0 <= x < w and 0 <= y < h:
-            game_map.grid[x][y].building = "building"
-
-    # Example hills distributed so crossbowmen can use them
-    hill_coords = [
-        (3, 4), (w - 4, 4),
-        (3, h - 5), (w - 4, h - 5),
-        (w // 2, h // 2 - 6),
-    ]
-    for idx, (x, y) in enumerate(hill_coords):
-        if 0 <= x < w and 0 <= y < h:
-            game_map.grid[x][y].elevation = 1 + (idx % 2)
-
-
-def build_mirrored_battle_from_composition(comp: Dict[str, int], width: int = 20, height: int = 20
-                                          ) -> Tuple[Map, 'backend.army.Army', 'backend.army.Army']:
-    """
-    Given a composition dict (unitname -> count) build a Map and two mirrored armies.
-    """
-    game_map = Map(width, height)
-    _place_default_terrain(game_map)
-
-    army1 = Army("Player1")
-    army2 = Army("Player2")
-
-    melee_classes:  List[Type] = []
-    ranged_classes: List[Type] = []
-
-    for name, count in comp. items():
-        cls = _UNIT_CLASSES. get(name)
-        if not cls:
-            continue
-        for _ in range(count):
-            if cls is Crossbowman:
-                ranged_classes.append(cls)
-            else:
-                melee_classes.append(cls)
-
-    total_units = len(melee_classes) + len(ranged_classes)
-    if total_units == 0:
-        melee_classes = [Knight]
-        ranged_classes = [Crossbowman]
-        total_units = 2
-
-    max_cols = width
-    available_half_rows = max(1, (height - 1) // 2 - 1)
-
-    capacity = available_half_rows * max_cols
-    if total_units > capacity:
-        print(f"Warning:  composition too large for map {width}x{height}. Requested {total_units} units per army but only {capacity} fit.")
-        keep_melee = min(len(melee_classes), capacity)
-        remaining_capacity = capacity - keep_melee
-        keep_ranged = min(len(ranged_classes), remaining_capacity)
-        melee_classes = melee_classes[:keep_melee]
-        ranged_classes = ranged_classes[:keep_ranged]
-        total_units = keep_melee + keep_ranged
-
-    ranged_rows = _chunk_list(ranged_classes, max_cols)
-    melee_rows = _chunk_list(melee_classes, max_cols)
-
-    rows:  List[List[Type]] = []
-    rows.extend(ranged_rows)
-    rows.extend(melee_rows)
-
-    required_rows = len(rows)
-    if required_rows == 0:
-        _place_castles_on_map(game_map)
-        return game_map, army1, army2
-
-    top_half_start = 1
-    top_half_height = available_half_rows
-    top_start_row = top_half_start + max(0, (top_half_height - required_rows) // 2)
-
-    def place_rows_for_army(row_types: List[List[Type]], owner: str, start_row: int, army):
-        for r_idx, row_types_list in enumerate(row_types):
-            y = start_row + r_idx
-            n = len(row_types_list)
-            start_x = max(0, (width - n) // 2)
-            for i, cls in enumerate(row_types_list):
-                inst = cls(owner)
-                tx = start_x + i
-                placed = False
-                if 0 <= tx < width and 0 <= y < height and game_map.grid[tx][y]. is_empty():
-                    try:
-                        game_map.place_unit(inst, tx, y)
-                        army.add_unit(inst)
-                        placed = True
-                    except Exception:
-                        placed = False
-                if not placed:
-                    for d in range(1, width):
-                        for candidate in (tx + d, tx - d):
-                            if 0 <= candidate < width and game_map.grid[candidate][y].is_empty():
-                                game_map.place_unit(inst, candidate, y)
-                                army.add_unit(inst)
-                                placed = True
-                                break
-                        if placed:
-                            break
-                if not placed:
-                    found = False
-                    for yy in range(height):
-                        for xx in range(width):
-                            if game_map.grid[xx][yy]. is_empty():
-                                game_map.place_unit(inst, xx, yy)
-                                army.add_unit(inst)
-                                found = True
-                                break
-                        if found:
-                            break
-                    if not found:
-                        raise RuntimeError("Map full — cannot place unit")
-
-    place_rows_for_army(rows, "Player1", top_start_row, army1)
-
-    bottom_start_row = height - 1 - (top_start_row + required_rows - 1)
-    mirrored_rows_for_p2 = list(reversed(rows))
-    place_rows_for_army(mirrored_rows_for_p2, "Player2", bottom_start_row, army2)
-
-    _place_castles_on_map(game_map)
-
-    return game_map, army1, army2
-
-
-def build_mirrored_battle_from_custom_positions(positions, width=20, height=20):
-    _UNIT_CLASSES_LOCAL = {
-        "knight": Knight,
-        "pikeman":  Pikeman,
-        "crossbowman": Crossbowman
-    }
-
-    game_map = Map(width, height)
-    _place_default_terrain(game_map)
-
-    army1 = Army("Player1")
-    army2 = Army("Player2")
-
-    for unit_type, coords in positions.items():
-        cls = _UNIT_CLASSES_LOCAL.get(unit_type. lower())
-        if not cls:
-            continue
-        for (x, y) in coords:
-            u1 = cls("Player1")
-            tile1 = game_map.grid[x][y]
-            if tile1.is_empty():
-                game_map.place_unit(u1, x, y)
-                army1.add_unit(u1)
-            else:
-                raise ValueError(f"Tile P1 {x,y} non vide")
-
-            my = height - 1 - y
-            u2 = cls("Player2")
-            tile2 = game_map.grid[x][my]
-            if tile2.is_empty():
-                game_map.place_unit(u2, x, my)
-                army2.add_unit(u2)
-            else:
-                raise ValueError(f"Tile P2 {x,my} non vide")
-
-    _place_castles_on_map(game_map)
-
-    return game_map, army1, army2
-
-
-def run_battle(battle: Optional[Battle] = None, max_ticks: Optional[int] = None, delay: float = 0.5,
-               use_curses: bool = False, use_pygame:  bool = False, assets_dir: Optional[str] = None):
-    """
-    Run a new battle if `battle` is None, otherwise continue running the provided Battle.
-    """
-    if battle is None:
-        comp = ask_for_composition_interactive()
-        game_map, army1, army2 = build_mirrored_battle_from_composition(comp, width=20, height=20)
-        general1 = GeneralClever()
-        general2 = CaptainBraindead()
-        battle = Battle(game_map, army1, general1, army2, general2)
-
-    print("Initial map:")
-    print_map(battle.map)
-    battle.debug_print_tick()
-
-    if use_pygame:
-        if launch_pygame_battle is None:
-            print("Pygame frontend is not available.  Falling back to terminal.")
-            use_pygame = False
-        else:
-            try:
-                launch_pygame_battle(battle, delay=delay, assets_dir=assets_dir or "frontend/pygame_assets")
-            except Exception as e:
-                print("Failed to launch pygame display, falling back to standard loop:", e)
-                result = battle.run(delay=delay)
-                return battle
-            return battle
-
-    if use_curses:
-        try:
-            launch_curses_battle(battle, delay=delay)
-        except Exception as e:
-            print("Failed to launch curses display, falling back to standard loop:", e)
-            result = battle.run(delay=delay)
-            return battle
-    else:
-        result = battle.run(delay=delay)
-
-    try:
-        result = result or battle.run(delay=0)
-    except Exception:
-        army1_alive = bool(battle.army1.living_units())
-        army2_alive = bool(battle.army2.living_units())
-        if army1_alive and not army2_alive:
-            winner = battle.general1.name
-        elif army2_alive and not army1_alive:
-            winner = battle.general2.name
-        else:
-            winner = "Draw"
-        surviving_units = {battle.army1.owner: [u. to_dict() for u in battle.army1.living_units()],
-                           battle.army2.owner: [u. to_dict() for u in battle.army2.living_units()]}
-
-        class _R:
-            pass
-
-        result = _R()
-        result.winner = winner
-        result.ticks = battle.tick
-        result.surviving_units = surviving_units
-
-    print("\n--- Battle summary ---")
-    print(f"Winner:  {result.winner}")
-    print(f"Ticks simulated: {result. ticks}")
-    for owner, units in result.surviving_units. items():
-        print(f"{owner} surviving units: {len(units)}")
-    print("----------------------\n")
-
-    return battle
-
-
-def choose_save_method_and_save(battle:  Battle):
-    filename = input("Enter save name (e.g. knight_duel.json): ").strip()
-    if not filename:
-        print("No filename provided, skipping save.")
-        return
-
-    if filename.lower().endswith(".json"):
-        save_battle_json(battle, filename)
-    else:
-        save_battle_pickle(battle, filename)
-
-
-def load_any_battle(filename: str) -> Battle:
-    if filename.lower().endswith(".json"):
-        return load_battle_json(filename)
-    else:
-        return load_battle_pickle(filename)
+from backend.Class.Generals.General import General
+from backend.GameModes.Battle import Battle
+from backend.Utils.file_loader import load_mirrored_army_from_file, load_map_from_file
+from frontend.Graphics.PyScreen import PyScreen
+from frontend.Terminal import Screen
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG,
-                        format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+
+    def get_available_generals() :
+        return ""
+
+    def get_available_scenarios() :
+        return ""
 
     parser = argparse.ArgumentParser(description="MedievAIl Battle Simulator")
     subparsers = parser.add_subparsers(dest="mode")
 
     # ==================== RUN ====================
     run_parser = subparsers.add_parser("run", help="Run a new battle")
+
     run_parser.add_argument(
         "--ticks", "-t", type=int, default=None,
         help="Maximum ticks to run the battle (omit to run until end)"
     )
+    """
     run_parser.add_argument(
         "--delay", "-d", type=float, default=0.5,
         help="Delay (seconds) between ticks; set 0 for headless"
+    )
+    """
+
+    run_parser.add_argument(
+        "--general1", "-g1", type=str, default=None,
+        help=f"Comma-separated list of generals.  Available: {', '.join(get_available_generals())}"
+    )
+    run_parser.add_argument(
+        "--general2", "-g2", type=str, default=None,
+        help=f"Comma-separated list of generals.  Available: {', '.join(get_available_generals())}"
+    )
+    run_parser.add_argument(
+        "--army_file", type=str,
+        help="path of the army repartition file"
+    )
+    run_parser.add_argument(
+        "--map_file", type=str,
+        help="path of the map file"
     )
     run_parser.add_argument(
         "--curses", action="store_true", dest="use_curses",
@@ -548,20 +196,45 @@ def main():
 
     args = parser.parse_args()
 
+    gameMode = None
     # ==================== MODE:  RUN ====================
+
     if args.mode == "run":
-        battle = run_battle(
-            max_ticks=args.ticks,
-            delay=args. delay,
-            use_curses=args.use_curses,
-            use_pygame=args.use_pygame,
-            assets_dir=args.assets_dir
-        )
-        battle.debug_print_tick()
+        battle = Battle()
+        battle.max_tick=args.ticks
+        gameMode = battle
+
+        army1,army2 = load_mirrored_army_from_file(args.army_file)
+        map = load_map_from_file(args.map_file)
+
+        gameMode.army1 = army1
+        gameMode.army2 = army2
+
+        army1.general = General.general_from_name(args.general1)
+        army1.general.army = army1
+        army2.general = General.general_from_name(args.general2)
+        army2.general.army = army2
+
+        gameMode.map = map
+
+        affichage=None
+        if args.pygame :
+            affichage = PyScreen(args.assets-dir)
+        elif args.curses :
+            affichage = Screen()
+
+        gameMode.affichage = affichage
+
+
         choice = input("Do you want to save this battle? (y/n): ")
         if choice. lower().startswith("y"):
-            choose_save_method_and_save(battle)
+            gameMode.isSave = True
 
+        gameMode.launch()
+        gameMode.gameLoop()
+        gameMode.end()
+
+        """
     # ==================== MODE: LANCHESTER ====================
     elif args.mode == "lanchester":
         unit_type = args.type
@@ -704,7 +377,7 @@ def main():
 
         # Run tournament
         run_tournament_cli(args)
-
+        """
     else:
         parser.print_help()
 

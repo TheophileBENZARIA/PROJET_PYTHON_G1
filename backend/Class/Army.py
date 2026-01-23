@@ -25,7 +25,7 @@ class Army:
         return [u for u in self.__units if not u.is_alive()]
 
 
-    def testTargets(self, targets, map: Map, otherArmy: object ):
+    def testTargets(self, targets, map: Map, otherArmy ):
         # Le générale donne juste des cibles, il associe une unité à une unité adverse
         # L'objectif de cette fonction est de transformer cette association en action
         # Si l'unité cible est trop loin il faut que l'unité se déplace et si elle est dans le champ d'action elle l'attaque
@@ -83,7 +83,7 @@ class Army:
 
         return actions
 
-    def execOrder(self, orders: Action, otherArmy: object):
+    def execOrder(self, orders: Action, otherArmy):
         #Cette fonction applique les dégâts avec les bonus sur l'armée adverse et
         # déplace des unités alliées à la bonne vitesse selon les ordres.
         """
@@ -128,8 +128,8 @@ class Army:
                 unit.position = new_pos
                 unit.cooldown -= 1
 
-    def fight(self,map:Map, otherArmy: object ) :
-
+    def fight(self,map:Map, otherArmy ) :
+        
         targets = self.general.getTargets(map, otherArmy)
         orders = self.testTargets(targets,map,otherArmy)
 

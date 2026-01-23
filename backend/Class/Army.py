@@ -122,7 +122,18 @@ class Army:
                 """
             # DÉPLACEMENT
             elif action.kind == "move":
-                unit.position = action.target
+                new_pos = action.target
+                # Clamp position to map bounds if map has dimensions
+                if unit.army and unit.army.gameMode and unit.army.gameMode.map:
+                    game_map = unit.army.gameMode.map
+                    if hasattr(game_map, 'width') and hasattr(game_map, 'height'):
+                        new_x = max(0, min(new_pos[0], game_map.width - 1))
+                        new_y = max(0, min(new_pos[1], game_map.height - 1))
+                        unit.position = (new_x, new_y)
+                    else:
+                        unit.position = new_pos
+                else:
+                    unit.position = new_pos
 
             
 

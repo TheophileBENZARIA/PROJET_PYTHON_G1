@@ -1,133 +1,152 @@
+# backend/map_loader.py
 """
-ASCII loaders for armies and maps.
-
-Two ultra-simple formats are supported:
-
-Army files:
-    WIDTH;HEIGHT
-    rows of characters (K, P, C, or .)
-The army is mirrored vertically (Player1 uses the original layout and Player2
-uses the vertical mirror).
-
-Map files:
-    WIDTH;HEIGHT
-    rows of characters (., #, h, H, b, 1, 2, etc.)
-See ``_MAP_CHARS`` for the legend.
+Simple ASCII map loader.
 """
-
-from __future__ import annotations
-
-from copy import deepcopy
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, List, Tuple
 
 from backend.Class.Army import Army
 from backend.Class.Map import Map
-from backend.Class.Obstacles.Obstacle import Obstacle
-from backend.Class.Units.Crossbowman import Crossbowman
-from backend.Class.Units.Knight import Knight
-from backend.Class.Units.Pikeman import Pikeman
 
 
-@dataclass
-class _Tile:
-    x: int
-    y: int
-    elevation: int = 0
-    unit: object | None = None
-
-    def is_empty(self) -> bool:
-        return self.unit is None and self.building is None
+"""
+Army file format (example):
+18;3
+K..............P..
+..C..P....K
+..................
 
 
-def _read_ascii_payload(path: Path) -> Tuple[int, int, List[str]]:
-    raw = path.read_text(encoding="utf-8").splitlines()
-    header = next((line.strip() for line in raw if line.strip()), None)
-    if not header:
-        raise ValueError(f"{path} does not contain a header")
-    try:
-        width_str, height_str = header.split(";")
-        width, height = int(width_str), int(height_str)
-    except Exception as exc:
-        raise ValueError(f"Invalid header '{header}' in {path}") from exc
-    payload = [line.rstrip() for line in raw[1:] if line.strip()]
-    return width, height, payload
+Legend (example):
+  . = empty plain tile
+  K = Knight
+  P = Pikeman
+  C = Crossbowman
 
+This loader returns a tuple of Army instance and optionally lists of spawned units.
 
-# --------------------------------------------------------------------------- #
-# Army loader
-# --------------------------------------------------------------------------- #
-
-_UNIT_SYMBOLS = {
-    "K": Knight,
-    "P": Pikeman,
-    "C": Crossbowman,
-}
-
+def load_mirrored_army_from_file(path: str) -> tuple[Army, Army] :
+    #Cette fonction recupère un ficher, structurer correctement et génère une armée et une armée mirroir
+    pass
+"""
+from backend.Class.Army import Army
+from backend.Class.Units import Unit
 
 def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
-    path_obj = Path(path)
-    width, height, payload = _read_ascii_payload(path_obj)
-
     army1 = Army()
     army2 = Army()
+    with open(path, "r", encoding="utf-8") as f:
+        
+        # 1. RÉCUPÉRATION DES DIMENSIONS
+        
+        line_header = f.readline().strip()
+        if not line_header:
+            return army1, army2
+        
+        # On extrait x_max (la largeur) pour savoir où placer le miroir
+        x_max = int(line_header.split(';')[0])
+        
+        # 2. PARCOURS DE LA GRILLE (Ligne par ligne)
+        
+        for y, line in enumerate(f):
+            line = line.strip() # On nettoie la ligne des retours à la ligne (\n)
+            
+            
+            for x, char in enumerate(line):
+                
+                # On vérifie si le caractère correspond à une unité connue
+                if char in "KPC":
+                    
+                    # --- CRÉATION JOUEUR 1 ---
+                   
+                    pos1 = (float(x), float(y))
+                   
+                    u1 = Unit(100, 10, 5, 2, 1, 1, position=pos1)
+                    # add_unit lie l'unité à army1 et met à jour u1.army
+                    army1.add_unit(u1)
 
-    for y in range(height):
-        row = payload[y] if y < len(payload) else ""
-        for x in range(width):
-            char = row[x] if x < len(row) else "."
-            unit_cls = _UNIT_SYMBOLS.get(char.upper())
-            if unit_cls is None:
-                continue
+                    # --- CRÉATION JOUEUR 2 (LE MIROIR) ---
+                    
+                    
+                    x_mirror = float(x_max - 1 - x)
+                    pos2 = (x_mirror, float(y)) # 'y' reste le même (symétrie horizontale)
+                    
+                    # Instance de l'unité J2 (indépendante de u1)
+                    u2 = Unit(100, 10, 5, 2, 1, 1, position=pos2)
+                    
+                    army2.add_unit(u2)
 
-            unit1 = unit_cls(army1, (float(x), float(y)))
-            army1.add_unit(unit1)
-
-            mirror_y = height - 1 - y
-            unit2 = unit_cls(army2, (float(x), float(mirror_y)))
-            army2.add_unit(unit2)
-
+   
     return army1, army2
+""""
+Map file format (example):
+20;5
+####################
+#..................#
+#..h..H....b.......#
+#..................#
+####################
 
+Legend (example):
+  . = empty plain tile
+  # = impassable (treated as building/wall)
+  h = hill (elevation +1)
+  H = high hill (elevation +2)
+  b = building (provides cover)
 
-# --------------------------------------------------------------------------- #
-# Map loader
-# --------------------------------------------------------------------------- #
-
-_MAP_CHARS: Dict[str, Dict[str, object]] = {
-    ".": {},
-    " ": {},
-    "#": {"obstacle": {"size": 0.9}},
-    "b": {"obstacle": {"size": 0.7}},
-    "B": {"obstacle": {"size": 1.2}},
-    "h": {"elevation": 1},
-    "H": {"elevation": 2},
-}
-
-
+This loader returns a Map instance and optionally lists of spawned units.
+"""
 def load_map_from_file(path: str) -> Map:
-    path_obj = Path(path)
-    width, height, payload = _read_ascii_payload(path_obj)
+    with open(path, "r", encoding="utf-8") as f:
+        x_max, y_max = f.readline().replace("\n", "").split(";")
+        x_max, y_max = int(x_max), int(y_max)
+        lines = [line.rstrip("\n") for line in f.readlines() if line.strip() != ""]
 
-    game_map = Map()
-    game_map.width = width
-    game_map.height = height
-    game_map.grid = [[_Tile(x, y) for y in range(height)] for x in range(width)]
-    if not hasattr(game_map, "obstacles"):
-        game_map.obstacles = set()
+    for y in range(y_max):
+        for x in range(x_max):
+            ch = None
+            try:
+                ch = lines[y][x]
+            except:
+                break
 
-    for y in range(height):
-        row = payload[y] if y < len(payload) else ""
-        for x in range(width):
-            char = row[x] if x < len(row) else "."
-            info = _MAP_CHARS.get(char, {})
+    return None
+
+
+
+
+
+if __name__ == '__main__':
+    load_map_from_file("../test.carte")
+
+"""
+    CHAR_LEGEND = {
+    "K": {"elevation": 0, "building": None},
+    "C": {"elevation": 0, "building": "wall"},
+    "P": {"elevation": 1, "building": None},
+    }
+
+    height = len(lines)
+    width = max(len(line) for line in lines)
+    game_map = Map(width, height)
+
+    army1 = Army("Player1")
+    army2 = Army("Player2")
+
+    for y, line in enumerate(lines):
+        for x, ch in enumerate(line.ljust(width, ".")):
+            info = CHAR_LEGEND.get(ch, CHAR_LEGEND["."])
             tile = game_map.grid[x][y]
-            tile.elevation = int(info.get("elevation", 0))
-            obstacle_info = info.get("obstacle")
-            if obstacle_info:
-                obs = Obstacle((float(x), float(y)), float(obstacle_info.get("size", 1.0)))
-                obs.map = game_map
-                game_map.obstacles.add(obs)
+            tile.elevation = info.get("elevation", 0)
+            tile.building = info.get("building", None)
+            spawn = info.get("spawn")
+            if spawn:
+                owner, unit_type = spawn
+                # spawn a Knight by default; extend for more unit types later
+                unit = Knight(owner)
+                game_map.place_unit(unit, x, y)
+                if owner == "Player1":
+                    army1.add_unit(unit)
+                else:
+                    army2.add_unit(unit)
 
-    return game_map
+    return game_map, army1, army2
+    """

@@ -71,8 +71,9 @@ class PyScreen(Affichage) :
 
         pygame.display.flip()
 
-    def __init__(self, path):
-        super.__init__()
+    def __init__(self, *args):
+        super().__init__(*args)
+        path = args[0]
         self.WIDTH, self.HEIGHT = 1920, 1080
         self.offset_x, self.offset_y = 0, 0
         self.zoom_factor = 3

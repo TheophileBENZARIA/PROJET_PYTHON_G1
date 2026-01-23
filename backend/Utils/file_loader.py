@@ -33,6 +33,11 @@ from backend.Class.Units import Unit
 def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
     army1 = Army()
     army2 = Army()
+    UNIT_MAPPING = {
+        "K": Knight,
+        "P": Pikeman,
+        "C": Crossbowman
+    }
     with open(path, "r", encoding="utf-8") as f:
         
         # 1. RÉCUPÉRATION DES DIMENSIONS

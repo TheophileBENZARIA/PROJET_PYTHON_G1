@@ -7,7 +7,7 @@ class MajorDaft(General):
     A very aggressive general: every unit rushes head-first toward the closest enemy unit.
     """
 
-    def getTargets(self, map: Map, otherArmy: Army):
+    def getTargets(self, map, otherArmy: object):
         enemies = otherArmy.living_units()
         if not enemies:
             return []

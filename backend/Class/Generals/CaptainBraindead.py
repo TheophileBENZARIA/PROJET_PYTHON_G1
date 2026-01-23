@@ -5,22 +5,40 @@ from backend.Class.Map import Map
 
 class CaptainBraindead(General):
     """
-    This general gives no proactive orders: a unit only retaliates against the
-    last enemy that hit it. If no one attacked the unit yet, it receives no target.
+    Units retaliate against their last attacker; if nobody hit them yet, they just
+    pick the closest visible enemy (simple nearest-neighbour heuristic).
     """
 
     def getTargets(self, map: Map, otherArmy: Army):
         targets = []
-
-        enemy_units = set(otherArmy.living_units())
+        enemy_units = otherArmy.living_units()
+        if not enemy_units:
+            return targets
 
         for unit in self.army.living_units():
+            if unit.position is None:
+                continue
+
             last_attacker = getattr(unit, "last_attacker", None)
             if last_attacker in enemy_units:
                 targets.append((unit, last_attacker))
-            else:
-                # Clean up stale references so next ticks don't keep checking dead enemies
-                if hasattr(unit, "last_attacker") and unit.last_attacker not in enemy_units:
-                    unit.last_attacker = None
+                continue
+
+            # no recent attacker: engage closest enemy in line of sight (simplified to nearest distance)
+            target = min(
+                enemy_units,
+                key=lambda enemy: self.__distance_sq(unit, enemy),
+                default=None,
+            )
+            if target is not None:
+                targets.append((unit, target))
 
         return targets
+
+    @staticmethod
+    def __distance_sq(u1, u2):
+        if u1.position is None or u2.position is None:
+            return float("inf")
+        x1, y1 = u1.position
+        x2, y2 = u2.position
+        return (x1 - x2) ** 2 + (y1 - y2) ** 2

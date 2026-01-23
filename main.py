@@ -57,7 +57,7 @@ def main():
         help="Use pygame graphical display if available"
     )
     run_parser.add_argument(
-        "--assets-dir", type=str, default="frontend/pygame_assets",
+        "--assets-dir", type=str, default="frontend/Graphics/pygame_assets",
         help="Directory containing pygame assets (tiles/sprites)"
     )
 

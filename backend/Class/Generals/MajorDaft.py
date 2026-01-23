@@ -20,6 +20,10 @@ class MajorDaft(General):
                 return None
         return targets
 
+    @property
+    def name(self):
+        return "MajorDaft"
+
     @staticmethod
     def __distance(u1, u2):
         x1, y1 = u1.position

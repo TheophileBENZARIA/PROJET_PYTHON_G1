@@ -1,6 +1,5 @@
 from backend.Class.Map import Map
 from backend.Class.Units import Unit
-from backend.Utils.pathfinding import find_path
 from backend.Class.Action import Action
 
 
@@ -38,53 +37,48 @@ class Army:
             targets = {u: t for u, t in targets}
 
         for unit, target in targets.items():
+            if unit.is_alive() and target.is_alive():
+                ux, uy = unit.position
+                tx, ty = target.position
 
-            if unit not in self.living_units():
-                continue
-            if target not in otherArmy.living_units():
-                continue
+                dx = tx - ux
+                dy = ty - uy
+                dist2 = dx * dx + dy * dy
 
-            ux, uy = unit.position
-            tx, ty = target.position
+                #print(unit, target, dist2, unit.range,dist2 <= unit.range **2)
 
-            dx = tx - ux
-            dy = ty - uy
-            dist2 = dx * dx + dy * dy
-
-            
-            # ATTAQUE
-            if dist2 <= unit.range * unit.range:
-                if unit.cooldown == 0:
-                    actions.append(
-                        Action(unit=unit, kind="attack", target=target)
-                    )
+                # ATTAQUE
+                if dist2 <= unit.range **2 :
+                    if unit.cooldown <= 0:
+                        actions.append(Action(unit, "attack", target))
                 else:
-                    unit.cooldown -= 1
-                continue
+                    vector = (ux+dx/(dist2**0.5)*unit.speed, uy+dy/(dist2**0.5)*unit.speed)
+                    """
+                    # DÉPLACEMENT (A*)
+                    path = find_path(
+                        map,
+                        unit.position,
+                        target.position,
+                        unit,
+                        self,  # armée alliée
+                        otherArmy  # armée ennemie
+                    )
+                    """
 
-            
-            # DÉPLACEMENT (A*)
-            path = find_path(
-                map,
-                unit.position,
-                target.position,
-                unit,
-                self,          # armée alliée
-                otherArmy      # armée ennemie
-            )
 
-            if not path or len(path) < 2:
-                continue
+                    actions.append(
+                        Action(unit, "move", vector)
+                    )
 
-            next_pos = path[1]
 
-            actions.append(
-                Action(unit=unit, kind="move", target=next_pos)
-            )
+
+
 
         return actions
 
     def execOrder(self, orders: Action, otherArmy):
+        for unit in self.units :
+            if unit.cooldown > 0 : unit.cooldown-=1
         #Cette fonction applique les dégâts avec les bonus sur l'armée adverse et
         # déplace des unités alliées à la bonne vitesse selon les ordres.
         """
@@ -96,17 +90,20 @@ class Army:
         for action in orders:
 
             unit = action.unit
-
-            if unit not in self.living_units():
-                continue
             
             # ATTAQUE
             if action.kind == "attack":
                 target = action.target
 
+                bonus = 0
+                for classe in target.classes :
+                    bonus += unit.bonuses.get(classe,0)
+                if target.armor - bonus - unit.attack < 0:
+                    target.hp+=target.armor - bonus - unit.attack
+                unit.cooldown = unit.reload_time
+                """
                 # la cible peut être morte entre temps
-                if target not in otherArmy.living_units():
-                    continue
+                if target.is_alive():continue
 
                 # calcul des dégâts (inclut bonus de classe si disponible)
                 bonus = 0
@@ -121,26 +118,26 @@ class Army:
                 target.last_attacker = unit
 
                 # reset du cooldown
-                unit.cooldown = unit.reload_time
-
+                
+                """
             # DÉPLACEMENT
             elif action.kind == "move":
-                new_pos = action.target
-                unit.position = new_pos
-                unit.cooldown -= 1
+                unit.position = action.target
+
+            
 
     def fight(self,map:Map, otherArmy ) :
-        print("me",len(self.living_units()), len(otherArmy.living_units()))
+        #print("me",len(self.living_units()), len(otherArmy.living_units()))
 
         targets = self.general.getTargets(map, otherArmy)
-        print("me", len(self.living_units()), len(otherArmy.living_units()))
-        print("targets" ,targets)
+        #print("me", len(self.living_units()), len(otherArmy.living_units()))
+        #print("targets" ,targets)
         orders = self.testTargets(targets,map,otherArmy)
-        print("me", len(self.living_units()), len(otherArmy.living_units()))
-        print("orders", orders)
+        #print("me", len(self.living_units()), len(otherArmy.living_units()))
+        #print("orders", orders)
         self.execOrder(orders, otherArmy)
-        print("me", len(self.living_units()), len(otherArmy.living_units()))
-        print("executer")
+        #print("me", len(self.living_units()), len(otherArmy.living_units()))
+        #print("executer")
 
 
     """

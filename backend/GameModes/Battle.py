@@ -16,6 +16,7 @@ class Battle(GameMode):
         self.affichage.initialiser()
 
     def gameLoop(self):
+        """
         while not self.army1.isEmpty() and not self.army2.isEmpty() and (not self.max_tick or self.tick < self.max_tick) :
             self.army1.fight(self.map, otherArmy=self.army2)
             print("army1 fight ok")
@@ -26,6 +27,10 @@ class Battle(GameMode):
             self.affichage.afficher(self.map, army1=self.army1, army2=self.army2)
             print("affichage")
             self.tick+=1
+        """
+        self.affichage.afficher(self.map, army1=self.army1, army2=self.army2)
+        while True :
+            pass
 
 
 

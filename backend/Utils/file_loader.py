@@ -108,7 +108,6 @@ for y in range(y_max):
             except:
                 break
 
-    return None
 
 
 

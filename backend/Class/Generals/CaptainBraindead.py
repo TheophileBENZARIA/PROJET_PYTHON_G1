@@ -12,29 +12,28 @@ class CaptainBraindead(General):
     def getTargets(self, map: Map, otherArmy: Army):
         targets = []
         enemy_units = otherArmy.living_units()
-        if not enemy_units:
+        if not enemy_units: #this is to prevent errors when there are no enemy units alive
             return targets
 
         for unit in self.army.living_units():
-            if unit.position is None:
-                continue
 
             last_attacker = getattr(unit, "last_attacker", None)
             if last_attacker in enemy_units:
                 targets.append((unit, last_attacker))
-                continue
+            else :
 
             # no recent attacker: engage closest enemy in line of sight (simplified to nearest distance)
-            target = min(
-                enemy_units,
-                key=lambda enemy: self.__distance_sq(unit, enemy),
-                default=None,
-            )
-            if target is not None:
-                targets.append((unit, target))
+                target = min(
+                    enemy_units,
+                    key=lambda enemy: self.__distance_sq(unit, enemy),
+                    default=None,
+                )
+                if target and self.__distance_sq(unit, target) < unit.line_of_sight**2:
+                    targets.append((unit, target))
 
         return targets
 
+    #this function computes the squared distance between two units
     @staticmethod
     def __distance_sq(u1, u2):
         if u1.position is None or u2.position is None:

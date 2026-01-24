@@ -1,4 +1,22 @@
-https://github.com/Project-INSA-3A-STI-AIge-of-Empaire/Projet_Aige_Of_EmpAIre
+# Python Project 2025–2026: MedievAIl BAIttle GenerAIl
+
+
+<details>
+<summary>📑 Contents</summary>
+
+- [About The Project](#about-the-project)
+- [Built With](#built-with)
+- [Installation](#installation)
+
+</details>
+
+## Built With
+
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Pygame](https://img.shields.io/badge/Pygame-00A300?style=for-the-badge)
+
+
+
 
 1. Run a Single Battle
 Basic run (interactive unit selection, MajorDaft vs GeneralClever)

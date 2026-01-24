@@ -1,90 +1,89 @@
+
 from backend.Class.Map import Map
 from backend.Class.Units import Unit
-from backend.Utils.pathfinding import find_path
 from backend.Class.Action import Action
+import random  # NEW: for ranged dodge rolls
 
 
 class Army:
     def __init__(self):
-
-        self.gameMode=None
+        self.gameMode = None
         self.general = None
-        self.__units = []  # list of Unit objects
+        self.units = []  # list of Unit objects
 
     def add_unit(self, unit: Unit):
         unit.army = self
-        self.__units.append(unit)
+        self.units.append(unit)
 
     def isEmpty(self):
         return len(self.living_units()) <= 0
 
     def living_units(self):
-        return [u for u in self.__units if u.is_alive()]
+        return [u for u in self.units if u.is_alive()]
 
     def dead_units(self):
-        return [u for u in self.__units if not u.is_alive()]
+        return [u for u in self.units if not u.is_alive()]
 
-
-    def testTargets(self, targets, map: Map, otherArmy: object ):
+    def testTargets(self, targets, map: Map, otherArmy):
         # Le générale donne juste des cibles, il associe une unité à une unité adverse
         # L'objectif de cette fonction est de transformer cette association en action
         # Si l'unité cible est trop loin il faut que l'unité se déplace et si elle est dans le champ d'action elle l'attaque
         # Il faut aussi verifier que l'unité peut avancer (elle n'est pas face a un mur ou une autre unité)
-        #Il faut vérifier que le cooldown est a zero si on veut attaqué et si le cooldown n'est pas à 0 il faut le diminuer
+        # Il faut vérifier que le cooldown est a zero si on veut attaqué et si le cooldown n'est pas à 0 il faut le diminuer
         actions = []
 
         if isinstance(targets, list):
             targets = {u: t for u, t in targets}
 
         for unit, target in targets.items():
+            if unit.is_alive() and target.is_alive():
+                ux, uy = unit.position
+                tx, ty = target.position
 
-            if unit not in self.living_units():
-                continue
-            if target not in otherArmy.living_units():
-                continue
+                dx = tx - ux
+                dy = ty - uy
+                dist2 = dx * dx + dy * dy
 
-            ux, uy = unit.position
-            tx, ty = target.position
+                # print(unit, target, dist2, unit.range,dist2 <= unit.range **2)
 
-            dx = tx - ux
-            dy = ty - uy
-            dist2 = dx * dx + dy * dy
-
-            
-            # ATTAQUE
-            if dist2 <= unit.range * unit.range:
-                if unit.cooldown == 0:
-                    actions.append(
-                        Action(unit=unit, kind="attack", target=target)
-                    )
+                # ATTAQUE
+                if dist2 <= unit.range ** 2:
+                    if unit.cooldown <= 0:
+                        actions.append(Action(unit, "attack", target))
                 else:
-                    unit.cooldown -= 1
-                continue
+                    collision = True
+                    vector = (ux + dx / (dist2 ** 0.5) * unit.speed, uy + dy / (dist2 ** 0.5) * unit.speed)
 
-            
-            # DÉPLACEMENT (A*)
-            path = find_path(
-                map,
-                unit.position,
-                target.position,
-                unit,
-                self,          # armée alliée
-                otherArmy      # armée ennemie
-            )
-
-            if not path or len(path) < 2:
-                continue
-
-            next_pos = path[1]
-
-            actions.append(
-                Action(unit=unit, kind="move", target=next_pos)
-            )
-
+                    #while collision :
+                    collisionE, collisionA, collisionO = False,False,False
+                    for allie in self.living_units() :
+                        if allie != unit :
+                            collisionA = self.test_collision(unit,allie)
+                            if collisionA : break
+                    for enemie in otherArmy.living_units() :
+                        collisionE = self.test_collision(unit,enemie)
+                        if collisionE: break
+                    for obstacle in map.obstacles :
+                        collisionO = self.test_collision(unit, obstacle)
+                        if collisionO: break
+                    collision = collisionE or collisionA or collisionO
+                    """
+                        if collision :
+                            dx = dx+2
+                            dy = dy+2
+                            dist2 = dx**2+dy**2
+                            vector = (ux + dx / (dist2 ** 0.5) * unit.speed, uy + dy / (dist2 ** 0.5) * unit.speed
+                    """
+                    if not collision :
+                        actions.append(
+                            Action(unit, "move", vector)
+                        )
         return actions
 
-    def execOrder(self, orders: Action, otherArmy: object):
-        #Cette fonction applique les dégâts avec les bonus sur l'armée adverse et
+    def execOrder(self, orders: Action, otherArmy):
+        for unit in self.units:
+            if unit.cooldown > 0: unit.cooldown -= 1
+        # Cette fonction applique les dégâts avec les bonus sur l'armée adverse et
         # déplace des unités alliées à la bonne vitesse selon les ordres.
         """
         Applique les actions décidées par testTargets :
@@ -96,41 +95,92 @@ class Army:
 
             unit = action.unit
 
-            if unit not in self.living_units():
-                continue
-            
             # ATTAQUE
             if action.kind == "attack":
                 target = action.target
 
-                # la cible peut être morte entre temps
-                if target not in otherArmy.living_units():
-                    continue
+                bonus = 0
+                for classe in target.classes:
+                    bonus += unit.bonuses.get(classe, 0)
 
-                # calcul des dégâts 
-                damage = max(0, unit.attack - target.armor)
+                # Crossbow-specific dodge mechanic (rare miss, scales with target speed)
+                try:
+                    from backend.Class.Units.Crossbowman import Crossbowman
+                    is_crossbow = isinstance(unit, Crossbowman)
+                except Exception:
+                    is_crossbow = False
+
+                if is_crossbow:
+                    base_miss = 0.08  # 8% base dodge chance
+                    speed_factor = 0.015 * max(0, target.speed - 1)  # +1.5% per extra speed
+                    dodge_chance = min(0.20, base_miss + speed_factor)  # cap at 20%
+                    if random.random() < dodge_chance:
+                        # miss / dodge: only consume reload time
+                        unit.cooldown = unit.reload_time
+                        continue
+
+                # Compute applied damage (never heal)
+                damage = max(1, (unit.attack + bonus) - target.armor)
                 target.hp -= damage
-                target.last_attacker = unit
+                if target.hp < 0:
+                    target.hp = 0
 
-                # reset du cooldown
+                target.last_attacker = unit
                 unit.cooldown = unit.reload_time
 
             # DÉPLACEMENT
             elif action.kind == "move":
                 new_pos = action.target
-                unit.position = new_pos
-                unit.cooldown -= 1
+                # Clamp position to map bounds if map has dimensions
+                if unit.army and unit.army.gameMode and unit.army.gameMode.map:
+                    game_map = unit.army.gameMode.map
+                    if hasattr(game_map, 'width') and hasattr(game_map, 'height'):
+                        new_x = max(0, min(new_pos[0], game_map.width - 1))
+                        new_y = max(0, min(new_pos[1], game_map.height - 1))
+                        unit.position = (new_x, new_y)
+                    else:
+                        unit.position = new_pos
+                else:
+                    unit.position = new_pos
 
-    def fight(self,map:Map, otherArmy: object ) :
+    def fight(self, map: Map, otherArmy):
+        # print("me",len(self.living_units()), len(otherArmy.living_units()))
 
         targets = self.general.getTargets(map, otherArmy)
-        orders = self.testTargets(targets,map,otherArmy)
-
+        # print("me", len(self.living_units()), len(otherArmy.living_units()))
+        # print("targets" ,targets)
+        orders = self.testTargets(targets, map, otherArmy)
+        # print("me", len(self.living_units()), len(otherArmy.living_units()))
+        # print("orders", orders)
         self.execOrder(orders, otherArmy)
+        # print("me", len(self.living_units()), len(otherArmy.living_units()))
+        # print("executer")
 
 
+    def test_collision(self,unit, object):
+        """
+        rect = (x, y, largeur, hauteur)
+        """
+
+        x1, y1 = unit.position
+        x1-= unit.size/4
+        y1 -= unit.size / 4
+        w1, h1= unit.size/2, unit.size/2
+        x2, y2 = object.position
+        x2 -= unit.size / 4
+        y2 -= unit.size / 4
+        w2, h2 = object.size/2, object.size/2
+
+        return not (
+                x1 + w1 <= x2 or  # rect1 à gauche de rect2
+                x1 >= x2 + w2 or  # rect1 à droite de rect2
+                y1 + h1 <= y2 or  # rect1 au-dessus de rect2
+                y1 >= y2 + h2  # rect1 en dessous de rect2
+        )
     """
 
+=======
+>>>>>>> 39120288454e66b8353dc6d23954be8dece2d4d6
     @classmethod
     def from_dict(cls, data: Dict[str, Any], units_by_id: Dict[str, object]) -> "Army":
         army = cls(data["owner"])
@@ -139,13 +189,12 @@ class Army:
             if unit:
                 army.add_unit(unit)
         return army
-
-
-
+        
     def to_dict(self) -> Dict[str, Any]:
         return {
             "owner": self.owner,
             "unit_ids": [u.id for u in self.units],
         }
+
 
 """

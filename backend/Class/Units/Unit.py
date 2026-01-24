@@ -1,12 +1,12 @@
 import uuid
-
+from abc import abstractmethod
 
 
 class Unit():
 
 
     def __init__(self, hp: int, attack: int, armor: int,
-                 speed: int, range_: int, reload_time: int,position: tuple[float]= None, size :float=1, classes=None, bonuses=None):
+                 speed: int, range_: int, reload_time: int, ligne_of_sight:int,position: tuple[float]= None, size :float=1, classes=None, bonuses=None):
 
 
         self.__id = str(uuid.uuid4())
@@ -14,7 +14,7 @@ class Unit():
 
         # caractéristique
         self.hp = hp
-        self.__attack = attack
+        self._attack = attack
         self.armor = armor
         self.speed = speed
         self.range = range_
@@ -24,17 +24,14 @@ class Unit():
         self.bonuses = bonuses if bonuses else {}
         self.reload_time = reload_time #le temps qu'il faut entre 2 attaques
         self.cooldown = 0 #le temps necessaire qu'il reste à attendre pour la prochaine attaque
+        self.line_of_sight = ligne_of_sight
 
         self.last_attacker = None
 
-
     @property
     def attack(self):
-        return self.__attack
+        return self._attack
 
-    @attack.setter
-    def attack(self, value):
-        self.__attack= value
 
     @property #id est un argument privé cela permet de créer un getter
     def id(self) :
@@ -43,17 +40,6 @@ class Unit():
     def is_alive(self) -> bool:
         return self.hp > 0
 
-
-
-    @staticmethod
-    def unit_from_name(name: str):
-        UNIT_CLASSES = {
-            "knight": Knight,
-            "pikeman": Pikeman,
-            "crossbowman": Crossbowman,
-        }
-
-        return UNIT_CLASSES.get(name)
 
 """
     # Dans le init ---------------------------------------

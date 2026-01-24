@@ -4,7 +4,13 @@ import os
 from backend.GameModes.Battle import Battle
 from backend.Utils.class_by_name import general_from_name, get_available_generals
 from backend.Utils.file_loader import load_mirrored_army_from_file, load_map_from_file
-from backend.Utils.lanchester import run_lanchester_experiment
+from backend.Utils.lanchester import (
+    run_lanchester_dataset,
+    parse_range_expr,
+    parse_types_expr,
+    resolve_general_class,
+)
+from backend.Utils.plotters import plot_lanchester
 from frontend.Graphics.PyScreen import PyScreen
 from frontend.Terminal import Screen
 from frontend.Terminal.NoAffiche import NoAffiche
@@ -47,25 +53,31 @@ def main():
         help="Use pygame graphical display if available"
     )
 
-    # ==================== LANCHESTER ====================
-    lan_parser = subparsers.add_parser("lanchester", help="Run Lanchester headless scenarios and graph results")
-    lan_parser.add_argument(
-        "--type", "-u", choices=["melee", "archer"], default="melee",
-        help="Unit type: 'melee' (Knight) or 'archer' (Crossbowman)"
+    # ==================== PLOT (Lanchester, programmable) ====================
+    plot_parser = subparsers.add_parser(
+        "plot",
+        help="battle plot <AI> <plotter> <scenario(arg1,...)> <range for arg1> ... [-N=repeat]"
     )
-    lan_parser.add_argument(
-        "--N", "-n", dest="Ns", type=int, nargs="+", required=True,
-        help="One or more N values (each run pits N vs 2N of the same unit type)"
+    plot_parser.add_argument("ai", type=str, help="AI/general name (e.g., DAFT, CLEVER, BRAINDEAD)")
+    plot_parser.add_argument("plotter", type=str, help="Plotter name (e.g., PlotLanchester)")
+    plot_parser.add_argument("scenario", type=str, help="Scenario name (currently: Lanchester)")
+    plot_parser.add_argument("types_expr", type=str,
+                             help="Unit types list, e.g., [Knight,Crossbow]")
+    plot_parser.add_argument("range_expr", type=str,
+                             help='Range expression for N, e.g., range(1,100) or range(1,100,5)')
+    plot_parser.add_argument(
+        "--repeat", "-N", type=int, default=10,
+        help="Number of repeats per (type, N) run (default: 10)"
     )
-    lan_parser.add_argument(
+    plot_parser.add_argument(
         "--max-ticks", "-t", type=int, default=500,
-        help="Maximum ticks to run each simulation (default: 500)"
+        help="Maximum ticks per simulation (default: 500)"
     )
-    lan_parser.add_argument(
+    plot_parser.add_argument(
         "--graph", "-g", dest="graph_path", type=str, default="lanchester.png",
         help="Output path for the PNG graph (default: lanchester.png)"
     )
-    lan_parser.add_argument(
+    plot_parser.add_argument(
         "--no-graph", action="store_true",
         help="Disable graph generation"
     )
@@ -112,26 +124,43 @@ def main():
         gameMode.gameLoop()
         gameMode.end()
 
-    # ==================== MODE: LANCHESTER ====================
-    elif args.mode == "lanchester":
-        results, graph_path = run_lanchester_experiment(
-            unit_type=args.type,
-            N_values=args.Ns,
+    # ==================== MODE: PLOT (Lanchester laws) ====================
+    elif args.mode == "plot":
+        scenario_name = args.scenario.lower()
+        if scenario_name != "lanchester":
+            print(f"Unsupported scenario '{args.scenario}'. Only 'Lanchester' is available.")
+            return
+
+        unit_names = parse_types_expr(args.types_expr)
+        N_values = parse_range_expr(args.range_expr)
+        general_cls = resolve_general_class(args.ai)
+
+        dataset = run_lanchester_dataset(
+            unit_names=unit_names,
+            N_values=N_values,
+            general_cls=general_cls,
+            repeats=args.repeat,
             max_ticks=args.max_ticks,
-            graph_path=None if args.no_graph else args.graph_path,
         )
-        print("\nLanchester results (N vs 2N):")
-        for row in results:
+
+        print("\nLanchester plot dataset (averaged per (type, N)):")
+        for row in dataset:
             print(
-                f"N={row['N']:>4} | "
-                f"survivors_A (N side)={row['army1_survivors']:>4} | "
-                f"survivors_B (2N side)={row['army2_survivors']:>4} | "
-                f"ticks={row['ticks']}"
+                f"type={row['unit_type']:>9} | N={row['N']:>4} | "
+                f"winner={row['winner']:>8} | "
+                f"casualties_winner={row['casualties_winner']:>4} | "
+                f"ticks_avg={row['ticks_avg']:.2f}"
             )
-        if graph_path:
-            print(f"\nGraph saved to: {graph_path}")
+
+        graph_path = None
+        if not args.no_graph:
+            graph_path = plot_lanchester(dataset, args.graph_path)
+            if graph_path:
+                print(f"\nGraph saved to: {graph_path}")
+            else:
+                print("\nGraph generation skipped (matplotlib not installed).")
         else:
-            print("\nGraph generation was skipped (--no-graph).")
+            print("\nGraph generation disabled (--no-graph).")
 
     else:
         parser.print_help()

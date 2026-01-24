@@ -16,7 +16,7 @@ class Crossbowman(Unit):
 
     @property
     def attack(self):
-        if randint(1, 100) >= 85: return 0
+        #if randint(1, 100) >= 85: return 0
         return self._attack
 
 """

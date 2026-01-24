@@ -10,28 +10,15 @@ class ColonelArchBtw(General) :
         enemy_units = otherArmy.living_units()
         for unit in self.army.living_units() :
             target = None
-            dist = float("inf")
             if isinstance(unit, Crossbowman) :
-                for enemy in enemy_units :
-                    if isinstance(enemy,Pikeman) :
-                        tdist = self.__distance_sq(unit,enemy)
-                        if tdist<dist :
-                            target = enemy
-                            dist = tdist
+                pikemans = [e for e in enemy_units if isinstance(e, Pikeman)]
+                target = self.enemy_in_range(unit,pikemans)
             elif isinstance(unit, Pikeman) :
-                for enemy in enemy_units :
-                    if isinstance(enemy,Knight) :
-                        tdist = self.__distance_sq(unit,enemy)
-                        if tdist<dist :
-                            target = enemy
-                            dist = tdist
+                knights = [e for e in enemy_units if isinstance(e, Knight)]
+                target = self.enemy_in_range(unit, knights)
             elif isinstance(unit, Knight) :
-                for enemy in enemy_units :
-                    if isinstance(enemy,Crossbowman) :
-                        tdist = self.__distance_sq(unit,enemy)
-                        if tdist<dist :
-                            target = enemy
-                            dist = tdist
+                crossbowmans = [e for e in enemy_units if isinstance(e, Crossbowman)]
+                target = self.enemy_in_range(unit, crossbowmans)
 
             if target is not None :
                 targets.append((unit, target))
@@ -51,6 +38,17 @@ class ColonelArchBtw(General) :
                         targets.append((unit, target))
 
         return targets
+
+    def enemy_in_range(self,unit, enemy_units, range=0):
+        target = min(
+            enemy_units,
+            key=lambda enemy: self.__distance_sq(unit, enemy),
+            default=None,
+        )
+        if not range or (target and self.__distance_sq(unit, target) < range ** 2):
+            return target
+        return None
+
 
     #this function computes the squared distance between two units
     @staticmethod

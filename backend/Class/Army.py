@@ -101,6 +101,7 @@ class Army:
                 if target.armor - bonus - unit.attack < 0:
                     target.hp+=target.armor - bonus - unit.attack
                 unit.cooldown = unit.reload_time
+                target.last_attacker = unit
                 """
                 # la cible peut être morte entre temps
                 if target.is_alive():continue

@@ -26,7 +26,7 @@ class PyScreen(Affichage) :
 
         self.offset_x, self.offset_y = 0, 0
         self.zoom_factor = 20
-        self.unit_scale_multiplier = 3.0  # Multiplier to make units bigger and more visible
+        self.unit_scale_multiplier = 4.5  # Multiplier to make units bigger and more visible
 
         # Paramètres de la vue isométrique
         self.tile_size = 10  # Taille d'une tuile carrée
@@ -42,7 +42,7 @@ class PyScreen(Affichage) :
         self.unit_previous_positions = {}  # unit_id -> (x, y) - position before animation
         self.unit_animation_start_pos = {}  # unit_id -> (x, y) - position animation starts from
         self.animation_start_time = {}  # unit_id -> start_time
-        self.animation_duration = 0.15  # Short tween for smooth movement without pauses
+        self.animation_duration = 1.15  # Short tween for smooth movement without pauses
         
         # Minimap and UI settings
         self.show_minimap = True  # Toggle with M key

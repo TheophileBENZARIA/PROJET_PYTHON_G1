@@ -1,3 +1,4 @@
+
 from backend.Class.Map import Map
 from backend.Class.Units import Unit
 from backend.Class.Action import Action
@@ -6,7 +7,6 @@ import random  # NEW: for ranged dodge rolls
 
 class Army:
     def __init__(self):
-
         self.gameMode = None
         self.general = None
         self.units = []  # list of Unit objects
@@ -156,6 +156,7 @@ class Army:
         # print("me", len(self.living_units()), len(otherArmy.living_units()))
         # print("executer")
 
+
     def test_collision(self,unit, object):
         """
         rect = (x, y, largeur, hauteur)
@@ -178,6 +179,8 @@ class Army:
         )
     """
 
+=======
+>>>>>>> 39120288454e66b8353dc6d23954be8dece2d4d6
     @classmethod
     def from_dict(cls, data: Dict[str, Any], units_by_id: Dict[str, object]) -> "Army":
         army = cls(data["owner"])
@@ -186,13 +189,12 @@ class Army:
             if unit:
                 army.add_unit(unit)
         return army
-
-
-
+        
     def to_dict(self) -> Dict[str, Any]:
         return {
             "owner": self.owner,
             "unit_ids": [u.id for u in self.units],
         }
+
 
 """

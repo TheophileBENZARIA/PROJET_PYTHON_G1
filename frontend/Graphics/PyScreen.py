@@ -26,7 +26,7 @@ class PyScreen(Affichage) :
 
         self.offset_x, self.offset_y = 0, 0
         self.zoom_factor = 20
-        self.unit_scale_multiplier = 3.0  # Multiplier to make units bigger and more visible
+        self.unit_scale_multiplier = 4.5  # Multiplier to make units bigger and more visible
 
         # Paramètres de la vue isométrique
         self.tile_size = 10  # Taille d'une tuile carrée
@@ -42,7 +42,7 @@ class PyScreen(Affichage) :
         self.unit_previous_positions = {}  # unit_id -> (x, y) - position before animation
         self.unit_animation_start_pos = {}  # unit_id -> (x, y) - position animation starts from
         self.animation_start_time = {}  # unit_id -> start_time
-        self.animation_duration = 0.15  # Short tween for smooth movement without pauses
+        self.animation_duration = 1.15  # Short tween for smooth movement without pauses
         
         # Minimap and UI settings
         self.show_minimap = True  # Toggle with M key
@@ -54,6 +54,12 @@ class PyScreen(Affichage) :
         self.show_army1_details = True  # F2: Toggle army1 details
         self.show_army2_details = True  # F3: Toggle army2 details
         self.show_unit_counts = True  # F4: Toggle unit type counts
+        
+        # Battle speed control (Z/X keys)
+        self.battle_speed_multiplier = 1.0  # 1.0 = normal speed, >1.0 = faster, <1.0 = slower
+        
+        # Pause control (Space key)
+        self.is_paused_state = False
         
         # Initialize font for text display
         pygame.font.init()
@@ -104,6 +110,52 @@ class PyScreen(Affichage) :
             self.unit_previous_positions[unit_id] = current_pos
         return current_pos
     
+    def _get_max_hp(self, unit):
+        """Get the maximum HP for a unit based on its type."""
+        if isinstance(unit, Knight):
+            return 100
+        elif isinstance(unit, Pikeman):
+            return 55
+        elif isinstance(unit, Crossbowman):
+            return 35
+        else:
+            return max(unit.hp, 1)  # Fallback to current HP if unknown type
+    
+    def _draw_hp_bar(self, unit, iso_x, iso_y, unit_size):
+        """Draw HP bar above a unit."""
+        max_hp = self._get_max_hp(unit)
+        current_hp = max(0, unit.hp)  # Ensure non-negative
+        hp_percentage = current_hp / max_hp if max_hp > 0 else 0
+        
+        # HP bar dimensions
+        bar_width = unit_size
+        bar_height = 4
+        bar_x = int(iso_x - bar_width // 2)
+        bar_y = int(iso_y - unit_size // 2 - 10)  # Position above unit
+        
+        # Draw background (black/dark)
+        pygame.draw.rect(self.screen, (40, 40, 40), 
+                       (bar_x, bar_y, bar_width, bar_height))
+        
+        # Draw HP bar (green to red gradient based on HP)
+        if hp_percentage > 0:
+            hp_width = int(bar_width * hp_percentage)
+            
+            # Color gradient: green (high) -> yellow (medium) -> red (low)
+            if hp_percentage > 0.6:
+                hp_color = (50, 200, 50)  # Green
+            elif hp_percentage > 0.3:
+                hp_color = (200, 200, 50)  # Yellow
+            else:
+                hp_color = (200, 50, 50)  # Red
+            
+            pygame.draw.rect(self.screen, hp_color, 
+                           (bar_x, bar_y, hp_width, bar_height))
+        
+        # Draw border
+        pygame.draw.rect(self.screen, (255, 255, 255), 
+                        (bar_x, bar_y, bar_width, bar_height), 1)
+    
     def _draw_unit(self, unit, army_color):
         """Helper function to draw a single unit with smooth position."""
         interp_pos = self._get_interpolated_position(unit)
@@ -128,6 +180,9 @@ class PyScreen(Affichage) :
         # Draw colored border circle to identify army
         border_radius = unit_size // 2 + 3
         pygame.draw.circle(self.screen, army_color, (int(iso_x), int(iso_y)), border_radius, 2)
+        
+        # Draw HP bar above unit
+        self._draw_hp_bar(unit, iso_x, iso_y, unit_size)
 
     def afficher(self, map: Map, army1: Army, army2: Army):
         # Handle input for camera movement and zoom
@@ -170,8 +225,40 @@ class PyScreen(Affichage) :
         # Draw army visualization if enabled
         if self.show_army_stats:
             self._draw_army_stats(army1, army2)
+        
+        # Draw pause indicator if paused
+        if self.is_paused_state:
+            self._draw_pause_indicator()
 
         pygame.display.flip()
+    
+    def is_paused(self):
+        """Return pause state for Battle gameLoop."""
+        return self.is_paused_state
+    
+    def _draw_pause_indicator(self):
+        """Draw a pause indicator on screen."""
+        # Draw semi-transparent overlay
+        overlay = pygame.Surface((self.WIDTH, self.HEIGHT))
+        overlay.set_alpha(128)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+        
+        # Draw "PAUSED" text in center
+        paused_text = self.font.render("PAUSED", True, (255, 255, 255))
+        paused_rect = paused_text.get_rect(center=(self.WIDTH // 2, self.HEIGHT // 2))
+        
+        # Draw background for text
+        bg_rect = paused_rect.inflate(20, 10)
+        pygame.draw.rect(self.screen, (40, 40, 40), bg_rect)
+        pygame.draw.rect(self.screen, (255, 255, 255), bg_rect, 2)
+        
+        self.screen.blit(paused_text, paused_rect)
+        
+        # Draw instruction
+        instruction = self.small_font.render("Press SPACE to resume", True, (200, 200, 200))
+        inst_rect = instruction.get_rect(center=(self.WIDTH // 2, self.HEIGHT // 2 + 40))
+        self.screen.blit(instruction, inst_rect)
 
 
 
@@ -207,6 +294,21 @@ class PyScreen(Affichage) :
                 elif event.key == pygame.K_F4:
                     # Toggle unit type counts
                     self.show_unit_counts = not self.show_unit_counts
+                elif event.key == pygame.K_z:
+                    # Increase battle speed (faster ticks)
+                    self.battle_speed_multiplier = max(0.1, self.battle_speed_multiplier * 0.7)  # Decrease delay = faster
+                    print(f"Battle speed: {1.0/self.battle_speed_multiplier:.1f}x (faster)")
+                elif event.key == pygame.K_x:
+                    # Decrease battle speed (slower ticks)
+                    self.battle_speed_multiplier = min(5.0, self.battle_speed_multiplier * 1.4)  # Increase delay = slower
+                    print(f"Battle speed: {1.0/self.battle_speed_multiplier:.1f}x (slower)")
+                elif event.key == pygame.K_SPACE:
+                    # Toggle pause
+                    self.is_paused_state = not self.is_paused_state
+                    if self.is_paused_state:
+                        print("Battle PAUSED - Press SPACE to resume")
+                    else:
+                        print("Battle RESUMED")
         
         # Then check for held keys (for continuous movement)
         keys = pygame.key.get_pressed()

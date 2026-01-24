@@ -58,6 +58,9 @@ class PyScreen(Affichage) :
         # Battle speed control (Z/X keys)
         self.battle_speed_multiplier = 1.0  # 1.0 = normal speed, >1.0 = faster, <1.0 = slower
         
+        # Pause control (Space key)
+        self.is_paused_state = False
+        
         # Initialize font for text display
         pygame.font.init()
         self.font = pygame.font.Font(None, 24)
@@ -222,8 +225,40 @@ class PyScreen(Affichage) :
         # Draw army visualization if enabled
         if self.show_army_stats:
             self._draw_army_stats(army1, army2)
+        
+        # Draw pause indicator if paused
+        if self.is_paused_state:
+            self._draw_pause_indicator()
 
         pygame.display.flip()
+    
+    def is_paused(self):
+        """Return pause state for Battle gameLoop."""
+        return self.is_paused_state
+    
+    def _draw_pause_indicator(self):
+        """Draw a pause indicator on screen."""
+        # Draw semi-transparent overlay
+        overlay = pygame.Surface((self.WIDTH, self.HEIGHT))
+        overlay.set_alpha(128)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+        
+        # Draw "PAUSED" text in center
+        paused_text = self.font.render("PAUSED", True, (255, 255, 255))
+        paused_rect = paused_text.get_rect(center=(self.WIDTH // 2, self.HEIGHT // 2))
+        
+        # Draw background for text
+        bg_rect = paused_rect.inflate(20, 10)
+        pygame.draw.rect(self.screen, (40, 40, 40), bg_rect)
+        pygame.draw.rect(self.screen, (255, 255, 255), bg_rect, 2)
+        
+        self.screen.blit(paused_text, paused_rect)
+        
+        # Draw instruction
+        instruction = self.small_font.render("Press SPACE to resume", True, (200, 200, 200))
+        inst_rect = instruction.get_rect(center=(self.WIDTH // 2, self.HEIGHT // 2 + 40))
+        self.screen.blit(instruction, inst_rect)
 
 
 
@@ -267,6 +302,13 @@ class PyScreen(Affichage) :
                     # Decrease battle speed (slower ticks)
                     self.battle_speed_multiplier = min(5.0, self.battle_speed_multiplier * 1.4)  # Increase delay = slower
                     print(f"Battle speed: {1.0/self.battle_speed_multiplier:.1f}x (slower)")
+                elif event.key == pygame.K_SPACE:
+                    # Toggle pause
+                    self.is_paused_state = not self.is_paused_state
+                    if self.is_paused_state:
+                        print("Battle PAUSED - Press SPACE to resume")
+                    else:
+                        print("Battle RESUMED")
         
         # Then check for held keys (for continuous movement)
         keys = pygame.key.get_pressed()

@@ -1,4 +1,5 @@
 from backend.Class.Generals.CaptainBraindead import CaptainBraindead
+from backend.Class.Generals.ColonelArchBtw import ColonelArchBtw
 from backend.Class.Generals.GeneralClever import GeneralClever
 from backend.Class.Generals.MajorDaft import MajorDaft
 from backend.Class.Units.Crossbowman import Crossbowman
@@ -9,6 +10,7 @@ GENERAL_REGISTRY: dict[str, type] = {
             "CaptainBraindead": CaptainBraindead,
             "MajorDaft": MajorDaft,
             "GeneralClever": GeneralClever,
+            "ColonelArchBtw": ColonelArchBtw,
         }
 
 @staticmethod

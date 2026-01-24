@@ -2,10 +2,10 @@
 """
 Simple ASCII map loader.
 """
-
-from backend.Class.Army import Army
 from backend.Class.Map import Map
-
+from backend.Class.Units.Crossbowman import Crossbowman
+from backend.Class.Units.Knight import Knight
+from backend.Class.Units.Pikeman import Pikeman
 
 """
 Army file format (example):
@@ -22,12 +22,11 @@ Legend (example):
   C = Crossbowman
 
 This loader returns a tuple of Army instance and optionally lists of spawned units.
-"""
 
 def load_mirrored_army_from_file(path: str) -> tuple[Army, Army] :
     #Cette fonction recupère un ficher, structurer correctement et génère une armée et une armée mirroir
     pass
-
+"""
 from backend.Class.Army import Army
 from backend.Class.Units import Unit
 
@@ -48,36 +47,29 @@ def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
         # 2. PARCOURS DE LA GRILLE (Ligne par ligne)
         
         for y, line in enumerate(f):
-            line = line.strip() # On nettoie la ligne des retours à la ligne (\n)
+            line = line.replace("\n","") # On nettoie la ligne des retours à la ligne (\n) et des espaces
             
             
             for x, char in enumerate(line):
                 
                 # On vérifie si le caractère correspond à une unité connue
-                if char in "KPC":
-                    
-                    # --- CRÉATION JOUEUR 1 ---
-                   
-                    pos1 = (float(x), float(y))
-                   
-                    u1 = Unit(100, 10, 5, 2, 1, 1, position=pos1)
-                    # add_unit lie l'unité à army1 et met à jour u1.army
-                    army1.add_unit(u1)
+                unit_class = None
+                if char == 'K' : unit_class = Knight
+                elif char == 'C': unit_class = Crossbowman
+                elif char == 'P' : unit_class = Pikeman
+                if unit_class :
+                    u1 = unit_class((x,y))
+                    # Mirror horizontally: army2 units go to the opposite side
+                    mirrored_x = x_max - 1 - x
+                    u2 = unit_class((mirrored_x, y))
 
-                    # --- CRÉATION JOUEUR 2 (LE MIROIR) ---
-                    
-                    
-                    x_mirror = float(x_max - 1 - x)
-                    pos2 = (x_mirror, float(y)) # 'y' reste le même (symétrie horizontale)
-                    
-                    # Instance de l'unité J2 (indépendante de u1)
-                    u2 = Unit(100, 10, 5, 2, 1, 1, position=pos2)
-                    
+                    army1.add_unit(u1)
                     army2.add_unit(u2)
 
    
     return army1, army2
-""""
+
+"""
 Map file format (example):
 20;5
 ####################
@@ -96,28 +88,36 @@ Legend (example):
 This loader returns a Map instance and optionally lists of spawned units.
 """
 def load_map_from_file(path: str) -> Map:
-    with open(path, "r", encoding="utf-8") as f:
-        x_max, y_max = f.readline().replace("\n", "").split(";")
-        x_max, y_max = int(x_max), int(y_max)
-        lines = [line.rstrip("\n") for line in f.readlines() if line.strip() != ""]
-for y in range(y_max):
-        for x in range(x_max):
-            ch = None
-            try:
-                ch = lines[y][x]
-            except:
-                break
+    """
+    Loads a map from a file. The map file format is:
+    width;height
+    (map content - currently just reads dimensions)
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            line_header = f.readline().strip()
+            if line_header:
+                # Parse dimensions from header (format: "width;height")
+                parts = line_header.split(';')
+                if len(parts) >= 2:
+                    width = int(parts[0])
+                    height = int(parts[1])
+                    return Map(width, height)
+                else:
+                    # Default if format is wrong
+                    return Map(100, 100)
+            else:
+                return Map(100, 100)
+    except FileNotFoundError:
+        print(f"Warning: Map file '{path}' not found. Using default map (100x100).")
+        return Map(100, 100)
+    except Exception as e:
+        print(f"Warning: Error loading map file '{path}': {e}. Using default map (100x100).")
+        return Map(100, 100)
 
 
-
-
-
-
-if __name__ == '__main__':
-    load_map_from_file("../test.carte")
-
-"""""
-     CHAR_LEGEND = {
+"""
+    CHAR_LEGEND = {
     "K": {"elevation": 0, "building": None},
     "C": {"elevation": 0, "building": "wall"},
     "P": {"elevation": 1, "building": None},

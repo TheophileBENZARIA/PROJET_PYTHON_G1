@@ -1,4 +1,6 @@
-https://github.com/Project-INSA-3A-STI-AIge-of-Empaire/Projet_Aige_Of_EmpAIre
+Python Project 2025–2026: MedievAIl
+BAIttle GenerAIl
+
 
 1. Run a Single Battle
 Basic run (interactive unit selection, MajorDaft vs GeneralClever)

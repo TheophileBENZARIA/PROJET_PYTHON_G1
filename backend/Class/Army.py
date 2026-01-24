@@ -109,7 +109,6 @@ class Army:
                     if random.random() < dodge_chance:
                         # miss / dodge: only consume reload time
                         unit.cooldown = unit.reload_time
-                        target.last_attacker = unit
                         continue
 
                 # Compute applied damage (never heal)

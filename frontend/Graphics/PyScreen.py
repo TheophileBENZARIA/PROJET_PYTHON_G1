@@ -61,6 +61,12 @@ class PyScreen(Affichage) :
         # Pause control (Space key)
         self.is_paused_state = False
         
+        # Save/Load control
+        self.quick_save_filename = "quicksave.json"
+        self.battle_instance = None  # Will be set by Battle gameLoop
+        self.show_load_menu = False  # Show file selection menu
+        self.load_menu_selected_index = 0  # Currently selected file index
+        
         # Initialize font for text display
         pygame.font.init()
         self.font = pygame.font.Font(None, 24)
@@ -189,6 +195,8 @@ class PyScreen(Affichage) :
         input_result = self.handle_input()
         if input_result == "QUIT":
             return "QUIT"  # Signal to quit
+        elif input_result == "LOAD":
+            return "LOAD"  # Signal to load
 
         self.screen.fill((0, 0, 0))
         x_max, x_min, y_max, y_min = Affichage.get_sizeMap(map, army1, army2)
@@ -229,6 +237,10 @@ class PyScreen(Affichage) :
         # Draw pause indicator if paused
         if self.is_paused_state:
             self._draw_pause_indicator()
+        
+        # Draw load menu if active
+        if self.show_load_menu:
+            self._draw_load_menu()
 
         pygame.display.flip()
     
@@ -278,7 +290,11 @@ class PyScreen(Affichage) :
                 return "QUIT"  # Signal to quit
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    return "QUIT"  # Signal to quit
+                    if self.show_load_menu:
+                        # Close load menu instead of quitting
+                        self.show_load_menu = False
+                    else:
+                        return "QUIT"  # Signal to quit
                 elif event.key == pygame.K_m:
                     # Toggle minimap
                     self.show_minimap = not self.show_minimap
@@ -309,6 +325,37 @@ class PyScreen(Affichage) :
                         print("Battle PAUSED - Press SPACE to resume")
                     else:
                         print("Battle RESUMED")
+                elif event.key == pygame.K_F11:
+                    # Quick save
+                    if self.battle_instance:
+                        self._quick_save()
+                elif event.key == pygame.K_F12:
+                    # Quick load - show file selection menu
+                    if self.battle_instance:
+                        self.show_load_menu = True
+                        self.load_menu_selected_index = 0
+                elif event.key == pygame.K_ESCAPE and self.show_load_menu:
+                    # Cancel load menu
+                    self.show_load_menu = False
+                elif event.key == pygame.K_RETURN and self.show_load_menu:
+                    # Confirm load selection
+                    self.show_load_menu = False
+                    return "LOAD"  # Signal to load with selected file
+                elif self.show_load_menu:
+                    # Navigate menu with arrow keys
+                    if event.key == pygame.K_UP:
+                        self.load_menu_selected_index = max(0, self.load_menu_selected_index - 1)
+                    elif event.key == pygame.K_DOWN:
+                        save_files = self._get_save_files()
+                        self.load_menu_selected_index = min(len(save_files) - 1, self.load_menu_selected_index + 1)
+                    elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7, pygame.K_8, pygame.K_9]:
+                        # Select by number key (1-9)
+                        num = event.key - pygame.K_1
+                        save_files = self._get_save_files()
+                        if num < len(save_files):
+                            self.load_menu_selected_index = num
+                            self.show_load_menu = False
+                            return "LOAD"  # Load immediately
         
         # Then check for held keys (for continuous movement)
         keys = pygame.key.get_pressed()
@@ -498,9 +545,172 @@ class PyScreen(Affichage) :
             "F1 - Toggle All Stats",
             "F2 - Toggle Army 1",
             "F3 - Toggle Army 2",
-            "F4 - Toggle Unit Counts"
+            "F4 - Toggle Unit Counts",
+            "F11 - Quick Save",
+            "F12 - Quick Load",
+            "SPACE - Pause/Resume",
+            "Z/X - Speed Up/Down"
         ]
         for line in help_text:
             text = self.small_font.render(line, True, (150, 150, 150))
             self.screen.blit(text, (panel_x + 5, current_y))
             current_y += line_height - 5
+    
+    def _quick_save(self):
+        """Quick save the current battle state."""
+        import os
+        from pathlib import Path
+        
+        if not self.battle_instance:
+            print("Error: No battle instance to save")
+            return
+        
+        save_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "saves")
+        os.makedirs(save_dir, exist_ok=True)
+        filepath = os.path.join(save_dir, self.quick_save_filename)
+        
+        try:
+            data = self.battle_instance.to_dict()
+            # Atomic write: write to temp then move
+            tmp = Path(filepath).with_suffix(".tmp")
+            with open(tmp, "w", encoding="utf-8") as f:
+                import json
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            os.replace(tmp, filepath)
+            print(f"Quick save successful: {filepath}")
+        except Exception as e:
+            print(f"Error saving battle: {e}")
+    
+    def set_battle_instance(self, battle):
+        """Set the battle instance for save/load operations."""
+        self.battle_instance = battle    
+    def _get_save_files(self):
+        """Get list of available save files."""
+        import os
+        import glob
+        
+        save_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "saves")
+        if not os.path.exists(save_dir):
+            return []
+        
+        # Get all .json files in saves directory
+        pattern = os.path.join(save_dir, "*.json")
+        files = glob.glob(pattern)
+        # Sort by modification time (newest first)
+        files.sort(key=os.path.getmtime, reverse=True)
+        # Return just the filenames
+        return [os.path.basename(f) for f in files]
+    
+    def _draw_load_menu(self):
+        """Draw the file selection menu for loading saves."""
+        save_files = self._get_save_files()
+        
+        if not save_files:
+            # No save files available
+            overlay = pygame.Surface((self.WIDTH, self.HEIGHT))
+            overlay.set_alpha(200)
+            overlay.fill((0, 0, 0))
+            self.screen.blit(overlay, (0, 0))
+            
+            no_saves_text = self.font.render("No save files found", True, (255, 255, 255))
+            no_saves_rect = no_saves_text.get_rect(center=(self.WIDTH // 2, self.HEIGHT // 2))
+            self.screen.blit(no_saves_text, no_saves_rect)
+            
+            esc_text = self.small_font.render("Press ESC to close", True, (200, 200, 200))
+            esc_rect = esc_text.get_rect(center=(self.WIDTH // 2, self.HEIGHT // 2 + 40))
+            self.screen.blit(esc_text, esc_rect)
+            return
+        
+        # Menu dimensions
+        menu_width = 500
+        menu_height = min(600, 50 + len(save_files) * 40)
+        menu_x = (self.WIDTH - menu_width) // 2
+        menu_y = (self.HEIGHT - menu_height) // 2
+        
+        # Draw background
+        menu_surface = pygame.Surface((menu_width, menu_height))
+        menu_surface.fill((40, 40, 40))
+        pygame.draw.rect(menu_surface, (255, 255, 255), (0, 0, menu_width, menu_height), 2)
+        self.screen.blit(menu_surface, (menu_x, menu_y))
+        
+        # Title
+        title = self.font.render("Select Save File to Load", True, (255, 255, 255))
+        title_rect = title.get_rect(center=(menu_x + menu_width // 2, menu_y + 25))
+        self.screen.blit(title, title_rect)
+        
+        # Draw file list
+        start_y = menu_y + 60
+        max_visible = min(len(save_files), 12)  # Show max 12 files
+        start_index = max(0, min(self.load_menu_selected_index - 5, len(save_files) - max_visible))
+        
+        for i in range(start_index, min(start_index + max_visible, len(save_files))):
+            filename = save_files[i]
+            y_pos = start_y + (i - start_index) * 40
+            
+            # Highlight selected item
+            if i == self.load_menu_selected_index:
+                pygame.draw.rect(self.screen, (100, 100, 200), 
+                               (menu_x + 10, y_pos - 5, menu_width - 20, 35))
+            
+            # File name
+            display_name = filename
+            if len(display_name) > 40:
+                display_name = display_name[:37] + "..."
+            
+            # Number label
+            num_text = self.small_font.render(f"{i+1}.", True, (200, 200, 200))
+            self.screen.blit(num_text, (menu_x + 20, y_pos))
+            
+            # File name
+            name_text = self.small_font.render(display_name, True, (255, 255, 255))
+            self.screen.blit(name_text, (menu_x + 60, y_pos))
+        
+        # Instructions
+        inst_y = menu_y + menu_height - 40
+        instructions = [
+            "UP/DOWN: Navigate  |  ENTER: Load  |  ESC: Cancel",
+            "Or press 1-9 to load directly"
+        ]
+        for j, inst in enumerate(instructions):
+            inst_text = self.small_font.render(inst, True, (150, 150, 150))
+            inst_rect = inst_text.get_rect(center=(menu_x + menu_width // 2, inst_y + j * 20))
+            self.screen.blit(inst_text, inst_rect)
+    
+    def _quick_load(self, filename=None):
+        """Quick load a saved battle state."""
+        import os
+        
+        save_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "saves")
+        
+        # Use selected filename or default
+        if filename is None:
+            save_files = self._get_save_files()
+            if not save_files:
+                print("Error: No save files found")
+                return None
+            # Use selected file from menu
+            if 0 <= self.load_menu_selected_index < len(save_files):
+                filename = save_files[self.load_menu_selected_index]
+            else:
+                filename = self.quick_save_filename
+        
+        filepath = os.path.join(save_dir, filename)
+        
+        if not os.path.exists(filepath):
+            print(f"Error: Save file not found: {filepath}")
+            return None
+        
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                import json
+                data = json.load(f)
+            
+            from backend.GameModes.Battle import Battle
+            loaded_battle = Battle.from_dict(data)
+            print(f"Quick load successful: {filepath}")
+            return loaded_battle
+        except Exception as e:
+            print(f"Error loading battle: {e}")
+            import traceback
+            traceback.print_exc()
+            return None

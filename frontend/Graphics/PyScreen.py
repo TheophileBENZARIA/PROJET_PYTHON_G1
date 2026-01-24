@@ -55,6 +55,9 @@ class PyScreen(Affichage) :
         self.show_army2_details = True  # F3: Toggle army2 details
         self.show_unit_counts = True  # F4: Toggle unit type counts
         
+        # Battle speed control (Z/X keys)
+        self.battle_speed_multiplier = 1.0  # 1.0 = normal speed, >1.0 = faster, <1.0 = slower
+        
         # Initialize font for text display
         pygame.font.init()
         self.font = pygame.font.Font(None, 24)
@@ -256,6 +259,14 @@ class PyScreen(Affichage) :
                 elif event.key == pygame.K_F4:
                     # Toggle unit type counts
                     self.show_unit_counts = not self.show_unit_counts
+                elif event.key == pygame.K_z:
+                    # Increase battle speed (faster ticks)
+                    self.battle_speed_multiplier = max(0.1, self.battle_speed_multiplier * 0.7)  # Decrease delay = faster
+                    print(f"Battle speed: {1.0/self.battle_speed_multiplier:.1f}x (faster)")
+                elif event.key == pygame.K_x:
+                    # Decrease battle speed (slower ticks)
+                    self.battle_speed_multiplier = min(5.0, self.battle_speed_multiplier * 1.4)  # Increase delay = slower
+                    print(f"Battle speed: {1.0/self.battle_speed_multiplier:.1f}x (slower)")
         
         # Then check for held keys (for continuous movement)
         keys = pygame.key.get_pressed()

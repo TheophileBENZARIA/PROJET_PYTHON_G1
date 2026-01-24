@@ -4,7 +4,7 @@ import os
 from backend.GameModes.Battle import Battle
 from backend.Utils.class_by_name import general_from_name, get_available_generals
 from backend.Utils.file_loader import load_mirrored_army_from_file, load_map_from_file
-from backend.Utils.lanchester import (
+from backend.Utils.Lanchester.lanchester import (
     run_lanchester_dataset,
     parse_range_expr,
     parse_types_expr,

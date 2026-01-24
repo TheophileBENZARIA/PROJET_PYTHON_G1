@@ -5,8 +5,7 @@ Provides:
 - run_lanchester_dataset(...) to collect metrics over ranges and repeats
 - helpers to parse CLI expressions (types list, range)
 """
-from typing import Iterable, List, Optional, Tuple, Type
-from pathlib import Path
+from typing import Iterable, List, Tuple, Type
 
 from backend.Class.Army import Army
 from backend.Class.Map import Map
@@ -15,7 +14,7 @@ from backend.Class.Units.Crossbowman import Crossbowman
 from backend.Class.Generals.MajorDaft import MajorDaft
 from backend.Class.Generals.GeneralClever import GeneralClever
 from backend.Class.Generals.CaptainBraindead import CaptainBraindead
-from backend.Utils.simulation import run_headless_battle
+from backend.Utils.Lanchester.simulation import run_headless_battle
 
 
 UNIT_NAME_MAP = {

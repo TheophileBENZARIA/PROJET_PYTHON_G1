@@ -11,6 +11,8 @@ from backend.Utils.Lanchester.lanchester import (
     resolve_general_class,
 )
 from backend.Utils.plotters import plot_lanchester
+from backend.Utils.scenarios import get_available_scenarios
+from backend.Utils.tournament import run_tournament_cli
 from frontend.Terminal import Screen
 from frontend.Terminal.NoAffiche import NoAffiche
 
@@ -79,6 +81,73 @@ def main():
     plot_parser.add_argument(
         "--no-graph", action="store_true",
         help="Disable graph generation"
+    )
+
+    # ==================== TOURNAMENT ====================
+    tournament_parser = subparsers.add_parser("tournament", help="Run an automated tournament")
+    tournament_parser.add_argument(
+        "--generals", "-g", type=str, default=None,
+        help="Comma-separated list of generals (default: all available)"
+    )
+    tournament_parser.add_argument(
+        "--scenarios", "-s", type=str, default=None,
+        help=f"Comma-separated list of scenarios (available: {', '.join(get_available_scenarios())})"
+    )
+    tournament_parser.add_argument(
+        "--repeats", "-r", type=int, default=3,
+        help="Number of repeats per matchup (default: 3)"
+    )
+    tournament_parser.add_argument(
+        "--no-swap", action="store_true",
+        help="Disable side swapping between repeats"
+    )
+    tournament_parser.add_argument(
+        "--delay", "-d", type=float, default=0.0,
+        help="Seconds between ticks (default: 0 for fastest)"
+    )
+    tournament_parser.add_argument(
+        "--ticks", "-t", type=int, default=500,
+        help="Maximum ticks per match (default: 500)"
+    )
+    tournament_parser.add_argument(
+        "--curses", action="store_true", dest="use_curses",
+        help="Use the curses terminal display"
+    )
+    tournament_parser.add_argument(
+        "--pygame", action="store_true", dest="use_pygame",
+        help="Use the pygame graphical display"
+    )
+    tournament_parser.add_argument(
+        "--assets-dir", type=str, default="frontend/Graphics/pygame_assets",
+        help="Directory containing pygame assets"
+    )
+    tournament_parser.add_argument(
+        "--headless", action="store_true",
+        help="Force headless mode (NoAffiche display)"
+    )
+    tournament_parser.add_argument(
+        "--output-dir", "-o", type=str, default="tournament_reports",
+        help="Directory where tournament reports will be stored"
+    )
+    tournament_parser.add_argument(
+        "--html", action="store_true",
+        help="Generate an HTML report"
+    )
+    tournament_parser.add_argument(
+        "--pdf", action="store_true",
+        help="Generate a PDF report (requires reportlab)"
+    )
+    tournament_parser.add_argument(
+        "--all-reports", action="store_true",
+        help="Generate both HTML and PDF reports"
+    )
+    tournament_parser.add_argument(
+        "--quiet", "-q", action="store_true",
+        help="Suppress per-match logs"
+    )
+    tournament_parser.add_argument(
+        "--list", action="store_true", dest="list_options",
+        help="List available generals and scenarios and exit"
     )
 
     args = parser.parse_args()
@@ -161,6 +230,9 @@ def main():
                 print("\nGraph generation skipped (matplotlib not installed).")
         else:
             print("\nGraph generation disabled (--no-graph).")
+    # ==================== MODE: TOURNAMENT ====================
+    elif args.mode == "tournament":
+        run_tournament_cli(args)
 
     else:
         parser.print_help()

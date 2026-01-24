@@ -31,6 +31,7 @@ class Screen(Affichage):
         self.status_msg = ""
         self.paused = False
         self.uses_pygame = False  # helps Battle know we don't need pygame clock
+        self.wait_for_close = True
         self.snapshot_dir = Path("snapshots")
         self.snapshot_dir.mkdir(parents=True, exist_ok=True)
         self._grid_width = 0

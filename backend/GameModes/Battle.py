@@ -14,6 +14,9 @@ class Battle(GameMode):
         super().__init__()
         self.max_tick = None
         self.tick = 0
+        self.tick_delay = 1.0  # seconds between simulation ticks
+        self.frame_delay = 0.05  # sleep duration when not using pygame
+        self.verbose = True
 
     def to_dict(self):
         """Serialize battle state to dictionary for saving."""
@@ -180,8 +183,9 @@ class Battle(GameMode):
         self.affichage.afficher(self.map, army1=self.army1, army2=self.army2)
         running = True
         last_tick_time = time.time()
-        base_tick_delay = 1.0  # Base delay between battle ticks (in seconds)
-        tick_delay = base_tick_delay  # Current delay (adjusted by speed multiplier)
+        base_tick_delay = getattr(self, "tick_delay", 1.0)
+        tick_delay = base_tick_delay
+        frame_delay = getattr(self, "frame_delay", 0.05)
 
         while running:
             # Check if battle should continue
@@ -221,10 +225,10 @@ class Battle(GameMode):
                     self.tick += 1
                     last_tick_time = current_time
                     
-                    # Print battle status
-                    army1_count = len(self.army1.living_units())
-                    army2_count = len(self.army2.living_units())
-                    #print(f"Tick {self.tick}: Army1={army1_count} units, Army2={army2_count} units")
+                    if getattr(self, "verbose", True):
+                        army1_count = len(self.army1.living_units())
+                        army2_count = len(self.army2.living_units())
+                        print(f"Tick {self.tick}: Army1={army1_count} units, Army2={army2_count} units")
             
             # Update display (this will handle input and events internally)
             result = self.affichage.afficher(self.map, army1=self.army1, army2=self.army2)
@@ -263,25 +267,31 @@ class Battle(GameMode):
             # If battle is over, show final state but keep window open
             if not battle_continues:
                 # Battle ended - show final results
-                if self.army1.isEmpty():
-                    print("Battle Over: Army 2 wins!")
-                elif self.army2.isEmpty():
-                    print("Battle Over: Army 1 wins!")
-                elif self.max_tick and self.tick >= self.max_tick:
-                    print(f"Battle Over: Reached max tick ({self.max_tick})")
-                    army1_count = len(self.army1.living_units())
-                    army2_count = len(self.army2.living_units())
-                    print(f"Final: Army1={army1_count} units, Army2={army2_count} units")
-            
+                if getattr(self, "verbose", True):
+                    if self.army1.isEmpty():
+                        print("Battle Over: Army 2 wins!")
+                    elif self.army2.isEmpty():
+                        print("Battle Over: Army 1 wins!")
+                    elif self.max_tick and self.tick >= self.max_tick:
+                        print(f"Battle Over: Reached max tick ({self.max_tick})")
+                        army1_count = len(self.army1.living_units())
+                        army2_count = len(self.army2.living_units())
+                        print(f"Final: Army1={army1_count} units, Army2={army2_count} units")
+                if not getattr(self.affichage, "wait_for_close", True):
+                    running = False
+                    break
+
             if clock:
                 clock.tick(60)
             else:
-                time.sleep(0.05)
+                if frame_delay > 0:
+                    time.sleep(frame_delay)
 
         # Clean up pygame when exiting
         if pygame:
             pygame.quit()
-        print("Battle ended. Exiting...")
+        if getattr(self, "verbose", True):
+            print("Battle ended. Exiting...")
 
     def save(self):
         pass

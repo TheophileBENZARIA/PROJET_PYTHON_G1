@@ -277,6 +277,7 @@ class PyScreen(Affichage) :
     def __init__(self, *args):
         super().__init__(*args)
         self.uses_pygame = True
+        self.wait_for_close = True
         if len(args) > 0:
             self.path = args[0] if args[0].endswith('/') or args[0].endswith('\\') else args[0] + '/'
         else:

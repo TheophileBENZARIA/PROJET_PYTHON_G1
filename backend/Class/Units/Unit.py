@@ -27,6 +27,7 @@ class Unit():
         self.line_of_sight = ligne_of_sight
 
         self.last_attacker = None
+        self.last_attacked =None
 
     @property
     def attack(self):

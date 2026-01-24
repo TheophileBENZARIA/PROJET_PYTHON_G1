@@ -52,7 +52,7 @@ class Army:
                 # print(unit, target, dist2, unit.range,dist2 <= unit.range **2)
 
                 # ATTAQUE
-                if dist2 <= unit.range ** 2:
+                if dist2 <= (unit.range+ unit.size/2 + target.size/2) ** 2:
                     if unit.cooldown <= 0:
                         actions.append(Action(unit, "attack", target))
                 else:
@@ -147,6 +147,7 @@ class Army:
                 if target.hp < 0:
                     target.hp = 0
 
+                unit.last_attacked = target
                 target.last_attacker = unit
                 unit.cooldown = unit.reload_time
 

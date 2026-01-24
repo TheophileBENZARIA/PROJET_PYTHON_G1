@@ -108,12 +108,11 @@ def load_map_from_file(path: str) -> Map:
                     map = Map(width, height)
                 else:
                     # Default if format is wrong
-                    map = Map(100, 100)
+                    map = Map(120, 120)
             else:
-                map = Map(100, 100)
+                map = Map(120, 120)
             if map is not None :
                 for y, line in enumerate(f):
-                    print(line)
                     line = line.replace("\n", "")  # On nettoie la ligne des retours à la ligne (\n) et des espaces
 
                     for x, char in enumerate(line):
@@ -127,11 +126,11 @@ def load_map_from_file(path: str) -> Map:
                             map.obstacles.add(obstacle)
             return map
     except FileNotFoundError:
-        print(f"Warning: Map file '{path}' not found. Using default map (100x100).")
-        return Map(100, 100)
+        print(f"Warning: Map file '{path}' not found. Using default map (120x120).")
+        return Map(120, 120)
     except Exception as e:
-        print(f"Warning: Error loading map file '{path}': {e}. Using default map (100x100).")
-        return Map(100, 100)
+        print(f"Warning: Error loading map file '{path}': {e}. Using default map (120x120).")
+        return Map(120, 120)
 
 
 """

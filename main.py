@@ -168,7 +168,6 @@ def main():
 
         general1 = general_from_name(args.general1)()
         general2 = general_from_name(args.general2)()
-        print(general1,general2)
 
         army1.general = general1
         general1.army = army1

@@ -51,15 +51,33 @@ class Army:
                     if unit.cooldown <= 0:
                         actions.append(Action(unit, "attack", target))
                 else:
+                    collision = True
                     vector = (ux + dx / (dist2 ** 0.5) * unit.speed, uy + dy / (dist2 ** 0.5) * unit.speed)
-                    #for enemie in otherArmy.living_units() :
 
-
-
-                    actions.append(
-                        Action(unit, "move", vector)
-                    )
-
+                    #while collision :
+                    collisionE, collisionA, collisionO = False,False,False
+                    for allie in self.living_units() :
+                        if allie != unit :
+                            collisionA = self.test_collision(unit,allie)
+                            if collisionA : break
+                    for enemie in otherArmy.living_units() :
+                        collisionE = self.test_collision(unit,enemie)
+                        if collisionE: break
+                    for obstacle in map.obstacles :
+                        collisionO = self.test_collision(unit, obstacle)
+                        if collisionO: break
+                    collision = collisionE or collisionA or collisionO
+                    """
+                        if collision :
+                            dx = dx+2
+                            dy = dy+2
+                            dist2 = dx**2+dy**2
+                            vector = (ux + dx / (dist2 ** 0.5) * unit.speed, uy + dy / (dist2 ** 0.5) * unit.speed
+                    """
+                    if not collision :
+                        actions.append(
+                            Action(unit, "move", vector)
+                        )
         return actions
 
     def execOrder(self, orders: Action, otherArmy):
@@ -138,6 +156,26 @@ class Army:
         # print("me", len(self.living_units()), len(otherArmy.living_units()))
         # print("executer")
 
+    def test_collision(self,unit, object):
+        """
+        rect = (x, y, largeur, hauteur)
+        """
+
+        x1, y1 = unit.position
+        x1-= unit.size/4
+        y1 -= unit.size / 4
+        w1, h1= unit.size/2, unit.size/2
+        x2, y2 = object.position
+        x2 -= unit.size / 4
+        y2 -= unit.size / 4
+        w2, h2 = object.size/2, object.size/2
+
+        return not (
+                x1 + w1 <= x2 or  # rect1 à gauche de rect2
+                x1 >= x2 + w2 or  # rect1 à droite de rect2
+                y1 + h1 <= y2 or  # rect1 au-dessus de rect2
+                y1 >= y2 + h2  # rect1 en dessous de rect2
+        )
     """
 
     @classmethod

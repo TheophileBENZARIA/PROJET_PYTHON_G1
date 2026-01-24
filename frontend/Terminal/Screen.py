@@ -35,6 +35,11 @@ class Screen(Affichage):
         self.snapshot_dir.mkdir(parents=True, exist_ok=True)
         self._grid_width = 0
         self._grid_height = 0
+        # Save/Load control
+        self.quick_save_filename = "quicksave.json"
+        self.battle_instance = None  # Will be set by Battle gameLoop
+        self.show_load_menu = False  # Show file selection menu
+        self.load_menu_selected_index = 0  # Currently selected file index
 
     # ------------------------------------------------------------------ #
     # Lifecycle
@@ -51,7 +56,7 @@ class Screen(Affichage):
             curses.start_color()
             curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
             curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_WHITE)
-        self.status_msg = "Terminal ready (Arrows/ZQSD scroll, P pause, TAB snapshot, ESC quit)"
+        self.status_msg = "Terminal ready (Arrows/ZQSD scroll, P pause, TAB snapshot, S save, L load, ESC quit)"
 
     # Legacy helper so old callers that expect `start()` still work.
     def start(self):
@@ -266,7 +271,7 @@ class Screen(Affichage):
         status_row = maxy - 2
         help_row = maxy - 1
         status_text = (self.status_msg or "").ljust(maxx - 1)
-        help_text = "ESC quit | Arrows/ZQSD (Shift fast) | P pause | TAB snapshot"
+        help_text = "ESC quit | Arrows/ZQSD (Shift fast) | P pause | TAB snapshot | S save | L load"
         try:
             self.std.addstr(status_row, 0, status_text[:maxx - 1])
             self.std.addstr(help_row, 0, help_text[:maxx - 1])
@@ -299,11 +304,49 @@ class Screen(Affichage):
                     webbrowser.open(path.resolve().as_uri(), new=2)
                 except Exception:
                     pass
+            elif key in (ord('s'), ord('S')):
+                # Quick save
+                if self.battle_instance:
+                    self._quick_save()
+                else:
+                    self.set_status("No battle instance to save")
+            elif key in (ord('l'), ord('L')):
+                # Quick load - show file selection menu
+                if self.battle_instance:
+                    self.show_load_menu = True
+                    self.load_menu_selected_index = 0
+                    action = self._show_load_menu()
+                    if action == "load":
+                        return "LOAD"  # Signal to load
+                    elif action == "quit":
+                        return "quit"
             elif key == 27:  # ESC quits the terminal view
-                action = "quit"
-                break
+                if self.show_load_menu:
+                    self.show_load_menu = False
+                else:
+                    action = "quit"
+                    break
             else:
-                self._handle_scroll(key)
+                if not self.show_load_menu:
+                    self._handle_scroll(key)
+                else:
+                    # Handle menu navigation
+                    if key == curses.KEY_UP:
+                        self.load_menu_selected_index = max(0, self.load_menu_selected_index - 1)
+                    elif key == curses.KEY_DOWN:
+                        save_files = self._get_save_files()
+                        self.load_menu_selected_index = min(len(save_files) - 1, self.load_menu_selected_index + 1)
+                    elif key == 10 or key == 13:  # Enter
+                        self.show_load_menu = False
+                        return "LOAD"
+                    elif ord('1') <= key <= ord('9'):
+                        # Direct selection by number
+                        num = key - ord('1')
+                        save_files = self._get_save_files()
+                        if num < len(save_files):
+                            self.load_menu_selected_index = num
+                            self.show_load_menu = False
+                            return "LOAD"
         return action
 
     def _handle_scroll(self, key):
@@ -411,3 +454,162 @@ class Screen(Affichage):
         if general2:
             lines.append(f"G2: {general2.__class__.__name__}")
         return lines
+    
+    def set_battle_instance(self, battle):
+        """Set the battle instance for save/load operations."""
+        self.battle_instance = battle
+    
+    def _get_save_files(self):
+        """Get list of available save files."""
+        import os
+        import glob
+        
+        save_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "saves")
+        if not os.path.exists(save_dir):
+            return []
+        
+        # Get all .json files in saves directory
+        pattern = os.path.join(save_dir, "*.json")
+        files = glob.glob(pattern)
+        # Sort by modification time (newest first)
+        files.sort(key=os.path.getmtime, reverse=True)
+        # Return just the filenames
+        return [os.path.basename(f) for f in files]
+    
+    def _quick_save(self):
+        """Quick save the current battle state."""
+        import os
+        from pathlib import Path
+        
+        if not self.battle_instance:
+            self.set_status("Error: No battle instance to save")
+            return
+        
+        save_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "saves")
+        os.makedirs(save_dir, exist_ok=True)
+        filepath = os.path.join(save_dir, self.quick_save_filename)
+        
+        try:
+            data = self.battle_instance.to_dict()
+            # Atomic write: write to temp then move
+            tmp = Path(filepath).with_suffix(".tmp")
+            with open(tmp, "w", encoding="utf-8") as f:
+                import json
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            os.replace(tmp, filepath)
+            self.set_status(f"Quick save successful: {filepath}")
+        except Exception as e:
+            self.set_status(f"Error saving battle: {e}")
+    
+    def _quick_load(self, filename=None):
+        """Quick load a saved battle state."""
+        import os
+        
+        save_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "saves")
+        
+        # Use selected filename or default
+        if filename is None:
+            save_files = self._get_save_files()
+            if not save_files:
+                self.set_status("Error: No save files found")
+                return None
+            # Use selected file from menu
+            if 0 <= self.load_menu_selected_index < len(save_files):
+                filename = save_files[self.load_menu_selected_index]
+            else:
+                filename = self.quick_save_filename
+        
+        filepath = os.path.join(save_dir, filename)
+        
+        if not os.path.exists(filepath):
+            self.set_status(f"Error: Save file not found: {filepath}")
+            return None
+        
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                import json
+                data = json.load(f)
+            
+            from backend.GameModes.Battle import Battle
+            loaded_battle = Battle.from_dict(data)
+            self.set_status(f"Quick load successful: {filepath}")
+            return loaded_battle
+        except Exception as e:
+            self.set_status(f"Error loading battle: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
+    def _show_load_menu(self):
+        """Show file selection menu for loading saves (curses-based)."""
+        if self.std is None:
+            return None
+        
+        save_files = self._get_save_files()
+        if not save_files:
+            self.set_status("No save files found. Press ESC to close.")
+            return None
+        
+        self.show_load_menu = True
+        self.load_menu_selected_index = 0
+        
+        # Draw menu
+        maxy, maxx = self.std.getmaxyx()
+        menu_height = min(len(save_files) + 4, maxy - 4)
+        menu_width = min(60, maxx - 4)
+        start_y = (maxy - menu_height) // 2
+        start_x = (maxx - menu_width) // 2
+        
+        # Clear and redraw
+        self.std.erase()
+        
+        # Draw border
+        try:
+            self.std.addstr(start_y, start_x, "┌" + "─" * (menu_width - 2) + "┐")
+            self.std.addstr(start_y + menu_height - 1, start_x, "└" + "─" * (menu_width - 2) + "┘")
+            for i in range(1, menu_height - 1):
+                self.std.addstr(start_y + i, start_x, "│")
+                self.std.addstr(start_y + i, start_x + menu_width - 1, "│")
+        except curses.error:
+            pass
+        
+        # Title
+        title = "Select Save File to Load"
+        try:
+            self.std.addstr(start_y + 1, start_x + (menu_width - len(title)) // 2, title)
+        except curses.error:
+            pass
+        
+        # File list
+        max_visible = min(len(save_files), menu_height - 4)
+        start_index = max(0, min(self.load_menu_selected_index - 5, len(save_files) - max_visible))
+        
+        for i in range(start_index, min(start_index + max_visible, len(save_files))):
+            y_pos = start_y + 3 + (i - start_index)
+            filename = save_files[i]
+            display_name = filename
+            if len(display_name) > menu_width - 8:
+                display_name = display_name[:menu_width - 11] + "..."
+            
+            # Highlight selected
+            attr = curses.A_REVERSE if i == self.load_menu_selected_index else 0
+            try:
+                line = f"{i+1}. {display_name}"
+                self.std.addstr(y_pos, start_x + 2, line[:menu_width - 4], attr)
+            except curses.error:
+                pass
+        
+        # Instructions
+        inst_y = start_y + menu_height - 2
+        instructions = [
+            "UP/DOWN: Navigate | ENTER: Load | ESC: Cancel",
+            "Or press 1-9 to load directly"
+        ]
+        for j, inst in enumerate(instructions):
+            try:
+                self.std.addstr(inst_y + j, start_x + 2, inst[:menu_width - 4])
+            except curses.error:
+                pass
+        
+        self.std.refresh()
+        return None

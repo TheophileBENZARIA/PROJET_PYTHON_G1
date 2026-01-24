@@ -11,6 +11,8 @@ GENERAL_REGISTRY: dict[str, type] = {
             "majordaft": MajorDaft,
             "generalclever": GeneralClever,
             "colonelarchbtw": ColonelArchBtw,
+            "clever" : GeneralClever,
+            "daft" : MajorDaft,
         }
 
 @staticmethod

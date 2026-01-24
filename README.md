@@ -21,11 +21,10 @@
 
 ### Battle Commands
 
-- `superflat.map --general1 CaptainBraindead --general2 MajorDaft --pygame`  
+- `python main.py run --pygame --army_file army\*.army --map_file map\*.map --general1 (choose general ex: MajorDaft) --general2 (choose general ex: MajorDaft)`  
   Launches a **pygame battle** (60 FPS display).  
-  `--pygame` can be dropped to run headless; add `--ticks 500` to cap duration.
 
-- `superflat.map --general1 CaptainBraindead --general2 MajorDaft --curses`  
+- `python main.py run --curses --army_file army\*.army --map_file map\*.map --general1 (choose general ex: MajorDaft) --general2 (choose general ex: MajorDaft)`  
   Same setup but with the **ASCII / curses terminal view**.  
   Requires a curses-capable terminal  
   (`pip install windows-curses` on Windows).
@@ -33,13 +32,6 @@
 - `python main.py tournament --generals CaptainBraindead,MajorDaft,GeneralClever --scenarios classique,lanchester_knight --repeats 3 --headless --html`  
   Runs an **automated tournament** in headless mode (fast, no display) and emits an  
   **HTML report** under `tournament_reports/`.
-
-  Other useful flags:
-  - `--ticks 600`
-  - `--delay 0.1`
-  - `--pdf`
-  - `--all-reports`
-  - `--list` (show available generals/scenarios)
 
 ---
 

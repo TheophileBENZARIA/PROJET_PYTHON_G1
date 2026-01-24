@@ -10,22 +10,22 @@ class ColonelArchBtw(General) :
         enemy_units = otherArmy.living_units()
         for unit in self.army.living_units() :
             target = None
-            if unit.last_attacked and unit.last_attacked.is_alive() :
-                targets.append((unit, unit.last_attacked))
-            else :
-                if isinstance(unit, Crossbowman):
-                    pikemans = [e for e in enemy_units if isinstance(e, Pikeman)]
-                    target = self.enemy_in_range(unit, pikemans)
-                elif isinstance(unit, Pikeman):
-                    knights = [e for e in enemy_units if isinstance(e, Knight)]
-                    target = self.enemy_in_range(unit, knights)
-                elif isinstance(unit, Knight):
-                    my_cross = [e for e in self.army.living_units() if isinstance(e, Crossbowman)]
-                    if self.enemy_in_range(unit, my_cross, 5):
-                        crossbowmans = [e for e in enemy_units if isinstance(e, Crossbowman)]
-                        target = self.enemy_in_range(unit, crossbowmans)
-                    else:
-                        target = self.enemy_in_range(unit, enemy_units)
+            #if unit.last_attacked and unit.last_attacked.is_alive() :
+            #    targets.append((unit, unit.last_attacked))
+            #else :
+            if isinstance(unit, Crossbowman):
+                pikemans = [e for e in enemy_units if isinstance(e, Pikeman)]
+                target = self.enemy_in_range(unit, pikemans)
+            elif isinstance(unit, Pikeman):
+                knights = [e for e in enemy_units if isinstance(e, Knight)]
+                target = self.enemy_in_range(unit, knights)
+            elif isinstance(unit, Knight):
+                my_cross = [e for e in self.army.living_units() if isinstance(e, Crossbowman)]
+                if self.enemy_in_range(unit, my_cross, 5):
+                    crossbowmans = [e for e in enemy_units if isinstance(e, Crossbowman)]
+                    target = self.enemy_in_range(unit, crossbowmans)
+                else:
+                    target = self.enemy_in_range(unit, enemy_units)
 
 
 

@@ -52,8 +52,8 @@ class Army:
                         actions.append(Action(unit, "attack", target))
                 else:
                     vector = (ux + dx / (dist2 ** 0.5) * unit.speed, uy + dy / (dist2 ** 0.5) * unit.speed)
-                    for enemie in otherArmy.living_units() :
-                        
+                    #for enemie in otherArmy.living_units() :
+
 
 
                     actions.append(

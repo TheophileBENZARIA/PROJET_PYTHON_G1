@@ -1,3 +1,5 @@
+from math import sin
+from math import cos
 
 from backend.Class.Map import Map
 from backend.Class.Units import Unit
@@ -51,34 +53,51 @@ class Army:
                     if unit.cooldown <= 0:
                         actions.append(Action(unit, "attack", target))
                 else:
-                    collision = True
-                    vector = (ux + dx / (dist2 ** 0.5) * unit.speed, uy + dy / (dist2 ** 0.5) * unit.speed)
+                    vector = (dx / (dist2 ** 0.5) * unit.speed,dy / (dist2 ** 0.5) * unit.speed)
+                    #print(vector)
+                    if self.try_collision(unit,map,vector,otherArmy):
+                        vector1 = vector[0] * cos(1) - vector[1] * sin(1), vector[0] * sin(1) + vector[1] * cos(1)
+                        #print(vector1)
+                        if self.try_collision(unit,map,vector1,otherArmy) :
+                            vector2 = vector[0] * cos(-1) - vector[1] * sin(-1), vector[0] * sin(-1) + vector[1] * cos(-1)
+                            #print(vector2)
+                            if self.try_collision(unit,map, vector2,otherArmy):
+                                vector = None
+                            else :
+                                vector = vector2
+                        else :
+                            vector = vector1
 
-                    #while collision :
-                    collisionE, collisionA, collisionO = False,False,False
-                    for allie in self.living_units() :
-                        if allie != unit :
-                            collisionA = self.test_collision(unit,allie)
-                            if collisionA : break
-                    for enemie in otherArmy.living_units() :
-                        collisionE = self.test_collision(unit,enemie)
-                        if collisionE: break
-                    for obstacle in map.obstacles :
-                        collisionO = self.test_collision(unit, obstacle)
-                        if collisionO: break
-                    collision = collisionE or collisionA or collisionO
-                    """
-                        if collision :
-                            dx = dx+2
-                            dy = dy+2
-                            dist2 = dx**2+dy**2
-                            vector = (ux + dx / (dist2 ** 0.5) * unit.speed, uy + dy / (dist2 ** 0.5) * unit.speed
-                    """
-                    if not collision :
+
+                    if vector is not None :
+                        vector = vector[0] +ux, vector[1]+uy
                         actions.append(
                             Action(unit, "move", vector)
                         )
         return actions
+
+    def try_collision(self,unit,map,vector, otherArmy):
+        collisionE, collisionA, collisionO = False, False, False
+        for allie in self.living_units():
+            if allie != unit:
+                collisionA = self.test_collision(vector, unit, allie)
+                if collisionA:
+                    # print(unit,allie,vector,unit.position, allie.position)
+                    break
+        for enemie in otherArmy.living_units():
+            collisionE = self.test_collision(vector, unit, enemie)
+            if collisionE:
+                # print(unit, enemie,vector, unit.position, enemie.position)
+                break
+        for obstacle in map.obstacles:
+            collisionO = self.test_collision(vector, unit, obstacle)
+            if collisionO: break
+        collision = collisionE or collisionA or collisionO
+
+        return collision
+
+
+
 
     def execOrder(self, orders: Action, otherArmy):
         for unit in self.units:
@@ -147,22 +166,22 @@ class Army:
         # print("me",len(self.living_units()), len(otherArmy.living_units()))
 
         targets = self.general.getTargets(map, otherArmy)
-        # print("me", len(self.living_units()), len(otherArmy.living_units()))
-        # print("targets" ,targets)
+        #print("me", len(self.living_units()), len(otherArmy.living_units()))
+        #print("targets" ,targets)
         orders = self.testTargets(targets, map, otherArmy)
-        # print("me", len(self.living_units()), len(otherArmy.living_units()))
-        # print("orders", orders)
+        #print("me", len(self.living_units()), len(otherArmy.living_units()))
+        #print("orders", orders)
         self.execOrder(orders, otherArmy)
-        # print("me", len(self.living_units()), len(otherArmy.living_units()))
-        # print("executer")
+        #print("me", len(self.living_units()), len(otherArmy.living_units()))
+        #print("executer")
 
 
-    def test_collision(self,unit, object):
+    def test_collision(self,vector,unit, object):
         """
         rect = (x, y, largeur, hauteur)
         """
 
-        x1, y1 = unit.position
+        x1, y1 = unit.position[0] +vector[0], unit.position[1] +vector[1]
         x1-= unit.size/4
         y1 -= unit.size / 4
         w1, h1= unit.size/2, unit.size/2

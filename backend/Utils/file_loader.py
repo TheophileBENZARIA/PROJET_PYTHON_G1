@@ -47,7 +47,7 @@ def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
         # 2. PARCOURS DE LA GRILLE (Ligne par ligne)
         
         for y, line in enumerate(f):
-            line = line.replace("\n","").replace(" ", "") # On nettoie la ligne des retours à la ligne (\n) et des espaces
+            line = line.replace("\n","") # On nettoie la ligne des retours à la ligne (\n) et des espaces
             
             
             for x, char in enumerate(line):

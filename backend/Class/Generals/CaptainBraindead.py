@@ -12,7 +12,7 @@ class CaptainBraindead(General):
     def getTargets(self, map: Map, otherArmy: Army):
         targets = []
         enemy_units = otherArmy.living_units()
-        if not enemy_units:
+        if not enemy_units: #this is to prevent errors when there are no enemy units alive
             return targets
 
         for unit in self.army.living_units():
@@ -33,6 +33,7 @@ class CaptainBraindead(General):
 
         return targets
 
+    #this function computes the squared distance between two units
     @staticmethod
     def __distance_sq(u1, u2):
         if u1.position is None or u2.position is None:

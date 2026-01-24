@@ -32,6 +32,9 @@
 - `python main.py tournament --generals CaptainBraindead,MajorDaft,GeneralClever --scenarios classique,lanchester_knight --repeats 3 --headless --html`  
   Runs an **automated tournament** in headless mode (fast, no display) and emits an  
   **HTML report** under `tournament_reports/`.
+  
+ - `python main.py plot DAFT PlotLanchester Lanchester "[Knight,Crossbow]" "range(1,100)" --repeat 10 --graph reports/lanchester.png`  
+  Runs a **Lanchester’s Law analysis**, plotting repeated simulations for Knight vs Crossbow forces and saving the resulting graph to `reports/lanchester.png`.
 
 ---
 

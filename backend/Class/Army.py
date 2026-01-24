@@ -52,17 +52,9 @@ class Army:
                         actions.append(Action(unit, "attack", target))
                 else:
                     vector = (ux + dx / (dist2 ** 0.5) * unit.speed, uy + dy / (dist2 ** 0.5) * unit.speed)
-                    """
-                    # DÉPLACEMENT (A*)
-                    path = find_path(
-                        map,
-                        unit.position,
-                        target.position,
-                        unit,
-                        self,  # armée alliée
-                        otherArmy  # armée ennemie
-                    )
-                    """
+                    for enemie in otherArmy.living_units() :
+                        
+
 
                     actions.append(
                         Action(unit, "move", vector)

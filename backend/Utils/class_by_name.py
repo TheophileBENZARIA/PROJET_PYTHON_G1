@@ -7,15 +7,15 @@ from backend.Class.Units.Knight import Knight
 from backend.Class.Units.Pikeman import Pikeman
 
 GENERAL_REGISTRY: dict[str, type] = {
-            "CaptainBraindead": CaptainBraindead,
-            "MajorDaft": MajorDaft,
-            "GeneralClever": GeneralClever,
-            "ColonelArchBtw": ColonelArchBtw,
+            "captainbraindead": CaptainBraindead,
+            "majordaft": MajorDaft,
+            "generalclever": GeneralClever,
+            "colonelarchbtw": ColonelArchBtw,
         }
 
 @staticmethod
 def general_from_name(name: str) :
-        return GENERAL_REGISTRY.get(name, CaptainBraindead)
+        return GENERAL_REGISTRY.get(name, MajorDaft)
 
 @staticmethod
 def get_available_generals() :
@@ -26,6 +26,8 @@ UNIT_CLASSES = {
         "knight": Knight,
         "pikeman": Pikeman,
         "crossbowman": Crossbowman,
+        "archer": Crossbowman,
+        "melee": Knight,
         }
 
 @staticmethod

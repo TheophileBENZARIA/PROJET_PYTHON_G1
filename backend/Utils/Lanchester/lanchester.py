@@ -15,29 +15,12 @@ from backend.Class.Generals.MajorDaft import MajorDaft
 from backend.Class.Generals.GeneralClever import GeneralClever
 from backend.Class.Generals.CaptainBraindead import CaptainBraindead
 from backend.Utils.Lanchester.simulation import run_headless_battle
-
-
-UNIT_NAME_MAP = {
-    "knight": Knight,
-    "crossbow": Crossbowman,
-    "crossbowman": Crossbowman,
-    "archer": Crossbowman,
-    "melee": Knight,
-}
-
-GENERAL_NAME_MAP = {
-    "daft": MajorDaft,
-    "majordaft": MajorDaft,
-    "clever": GeneralClever,
-    "generalclever": GeneralClever,
-    "braindead": CaptainBraindead,
-    "captainbraindead": CaptainBraindead,
-}
+from backend.Utils.class_by_name import general_from_name, unit_from_name
 
 
 def resolve_general_class(name: str):
     key = (name or "").lower()
-    return GENERAL_NAME_MAP.get(key, MajorDaft)
+    return general_from_name(name.lower())
 
 
 def parse_types_expr(expr: str) -> List[str]:
@@ -140,7 +123,7 @@ def run_lanchester_dataset(
     """
     rows = []
     for unit_name in unit_names:
-        cls = UNIT_NAME_MAP.get(unit_name.lower())
+        cls = unit_from_name(unit_name.lower())
         if cls is None:
             raise ValueError(f"Unknown unit type '{unit_name}'")
         for N in N_values:

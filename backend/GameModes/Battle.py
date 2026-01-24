@@ -30,7 +30,7 @@ class Battle(GameMode):
         self.affichage.afficher(self.map, army1=self.army1, army2=self.army2)
         running = True
         last_tick_time = time.time()
-        tick_delay = 1.0  # Delay between battle ticks (in seconds) - adjust for faster/slower simulation
+        tick_delay = 0.5  # Delay between battle ticks (in seconds) - adjust for faster/slower simulation
 
         while running:
             # Check if battle should continue

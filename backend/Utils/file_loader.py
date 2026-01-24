@@ -4,6 +4,7 @@ Simple ASCII map loader.
 """
 from backend.Class.Map import Map
 from backend.Class.Obstacles.Rocher import Rocher
+from backend.Class.Units.Castle import Castle
 from backend.Class.Units.Crossbowman import Crossbowman
 from backend.Class.Units.Knight import Knight
 from backend.Class.Units.Pikeman import Pikeman
@@ -58,6 +59,7 @@ def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
                 if char == 'K' : unit_class = Knight
                 elif char == 'C': unit_class = Crossbowman
                 elif char == 'P' : unit_class = Pikeman
+                elif char == 'H': unit_class = Castle
                 if unit_class :
                     u1 = unit_class((x,y))
                     # Mirror horizontally: army2 units go to the opposite side

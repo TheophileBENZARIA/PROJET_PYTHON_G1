@@ -8,6 +8,7 @@ from typing import List, Optional
 
 from backend.Class.Obstacles.Obstacle import Obstacle
 from backend.Class.Obstacles.Rocher import Rocher
+from backend.Class.Units.Castle import Castle
 from backend.Class.Units.Crossbowman import Crossbowman
 from backend.Class.Units.Knight import Knight
 from backend.Class.Units.Pikeman import Pikeman
@@ -194,6 +195,7 @@ class Screen(Affichage):
             Knight: "K",
             Pikeman: "P",
             Crossbowman: "C",
+            Castle : "H",
         }
         base = mapping.get(type(unit), "U")
         return base if player_one else base.lower()

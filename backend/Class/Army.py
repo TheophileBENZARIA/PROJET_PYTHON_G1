@@ -23,6 +23,9 @@ class Army:
     def living_units(self):
         return [u for u in self.units if u.is_alive()]
 
+    def moving_units(self):
+        return [u for u in self.living_units() if u.speed > 0]
+
     def dead_units(self):
         return [u for u in self.units if not u.is_alive()]
 

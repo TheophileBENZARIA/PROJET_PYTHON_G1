@@ -1,5 +1,4 @@
-Python Project 2025–2026: MedievAIl
-BAIttle GenerAIl
+#Python Project 2025–2026: MedievAIl BAIttle GenerAIl
 
 
 1. Run a Single Battle

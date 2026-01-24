@@ -1,6 +1,19 @@
 # Python Project 2025–2026: MedievAIl BAIttle GenerAIl
 
 
+<details>
+<summary>📑 Contents</summary>
+
+- [About The Project](#about-the-project)
+- [Built With](#python)
+- [Installation](#installation)
+
+</details>
+
+
+
+
+
 1. Run a Single Battle
 Basic run (interactive unit selection, MajorDaft vs GeneralClever)
 python main.py run

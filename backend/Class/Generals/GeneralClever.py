@@ -66,7 +66,7 @@ class GeneralClever(General):
         raw_damage = getattr(attacker, "attack", 1) + bonus
         effective_damage = max(1, raw_damage - getattr(target, "armor", 0))
 
-        dist = _manhattan(attacker.position, target.position)
+        dist = self.__distance_sq(attacker, target)
         score = effective_damage / (dist + 1)
 
         target_type = target.unit_type() if callable(getattr(target, "unit_type", None)) else None
@@ -90,7 +90,7 @@ class GeneralClever(General):
             for enemy in enemies:
                 if enemy.position is None:
                     continue
-                dist = _manhattan(unit.position, enemy.position)
+                dist = self.__distance_sq(unit, enemy)
                 if dist < best:
                     best = dist
         return best
@@ -108,3 +108,11 @@ class GeneralClever(General):
         if unit_type not in self._max_hp_cache:
             self._max_hp_cache[unit_type] = defaults.get(unit_type, 100)
         return self._max_hp_cache[unit_type]
+
+    @staticmethod
+    def __distance_sq(u1, u2):
+        if u1.position is None or u2.position is None:
+            return float("inf")
+        x1, y1 = u1.position
+        x2, y2 = u2.position
+        return (x1 - x2) ** 2 + (y1 - y2) ** 2

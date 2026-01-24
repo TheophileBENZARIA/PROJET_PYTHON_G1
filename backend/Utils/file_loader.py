@@ -22,22 +22,18 @@ Legend (example):
   C = Crossbowman
 
 This loader returns a tuple of Army instance and optionally lists of spawned units.
+"""
 
 def load_mirrored_army_from_file(path: str) -> tuple[Army, Army] :
     #Cette fonction recupère un ficher, structurer correctement et génère une armée et une armée mirroir
     pass
-"""
+
 from backend.Class.Army import Army
 from backend.Class.Units import Unit
 
 def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
     army1 = Army()
     army2 = Army()
-    UNIT_MAPPING = {
-        "K": Knight,
-        "P": Pikeman,
-        "C": Crossbowman
-    }
     with open(path, "r", encoding="utf-8") as f:
         
         # 1. RÉCUPÉRATION DES DIMENSIONS
@@ -104,8 +100,7 @@ def load_map_from_file(path: str) -> Map:
         x_max, y_max = f.readline().replace("\n", "").split(";")
         x_max, y_max = int(x_max), int(y_max)
         lines = [line.rstrip("\n") for line in f.readlines() if line.strip() != ""]
-
-    for y in range(y_max):
+for y in range(y_max):
         for x in range(x_max):
             ch = None
             try:
@@ -122,8 +117,8 @@ def load_map_from_file(path: str) -> Map:
 if __name__ == '__main__':
     load_map_from_file("../test.carte")
 
-"""
-    CHAR_LEGEND = {
+"""""
+     CHAR_LEGEND = {
     "K": {"elevation": 0, "building": None},
     "C": {"elevation": 0, "building": "wall"},
     "P": {"elevation": 1, "building": None},

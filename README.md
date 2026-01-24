@@ -5,11 +5,15 @@
 <summary>📑 Contents</summary>
 
 - [About The Project](#about-the-project)
-- [Built With](#python)
+- [Built With](#built-with)
 - [Installation](#installation)
 
 </details>
 
+## Built With
+
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Pygame](https://img.shields.io/badge/Pygame-00A300?style=for-the-badge)
 
 
 

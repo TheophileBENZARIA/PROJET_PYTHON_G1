@@ -3,6 +3,7 @@
 Simple ASCII map loader.
 """
 from backend.Class.Map import Map
+from backend.Class.Obstacles.Rocher import Rocher
 from backend.Class.Units.Crossbowman import Crossbowman
 from backend.Class.Units.Knight import Knight
 from backend.Class.Units.Pikeman import Pikeman
@@ -102,12 +103,27 @@ def load_map_from_file(path: str) -> Map:
                 if len(parts) >= 2:
                     width = int(parts[0])
                     height = int(parts[1])
-                    return Map(width, height)
+                    map = Map(width, height)
                 else:
                     # Default if format is wrong
-                    return Map(100, 100)
+                    map = Map(100, 100)
             else:
-                return Map(100, 100)
+                map = Map(100, 100)
+            if map is not None :
+                for y, line in enumerate(f):
+                    print(line)
+                    line = line.replace("\n", "")  # On nettoie la ligne des retours à la ligne (\n) et des espaces
+
+                    for x, char in enumerate(line):
+
+                        obstacle_class = None
+                        if char == 'O':
+                            obstacle_class = Rocher
+
+                        if obstacle_class:
+                            obstacle = obstacle_class((x, y),1)
+                            map.obstacles.add(obstacle)
+            return map
     except FileNotFoundError:
         print(f"Warning: Map file '{path}' not found. Using default map (100x100).")
         return Map(100, 100)

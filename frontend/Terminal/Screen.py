@@ -6,6 +6,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
+from backend.Class.Obstacles.Obstacle import Obstacle
+from backend.Class.Obstacles.Rocher import Rocher
+from backend.Class.Units.Crossbowman import Crossbowman
+from backend.Class.Units.Knight import Knight
+from backend.Class.Units.Pikeman import Pikeman
+from backend.Class.Units.Unit import Unit
 from frontend.Affichage import Affichage
 
 
@@ -113,14 +119,16 @@ class Screen(Affichage):
         grid = [[ "." for _ in range(width)] for _ in range(height)]
 
         # Obstacles (approximate circle footprint)
-        for obstacle in getattr(game_map, "obstacles", []):
-            self._mark_obstacle(grid, obstacle)
+        #for obstacle in getattr(game_map, "obstacles", []):
+        #    self._mark_obstacle(grid, obstacle)
 
         # Units
         for unit in army1.living_units():
             self._place_unit(grid, unit, player_one=True)
         for unit in army2.living_units():
             self._place_unit(grid, unit, player_one=False)
+        for obstacle in game_map.obstacles :
+            self._place_unit(grid, obstacle)
 
         return grid
 
@@ -162,24 +170,32 @@ class Screen(Affichage):
                 ix, iy = self._clamp_indices(ox + dx, oy + dy)
                 grid[iy][ix] = self.OBSTACLE_CHAR
 
-    def _place_unit(self, grid, unit, player_one: bool):
+    def _place_unit(self, grid, unit, player_one: bool= False):
         if unit.position is None:
             return
         ux = int(round(unit.position[0]))
         uy = int(round(unit.position[1]))
         ix, iy = self._clamp_indices(ux, uy)
-        grid[iy][ix] = self._symbol_for_unit(unit, player_one)
+        if isinstance(unit,Unit) :
+            grid[iy][ix] = self._symbol_for_unit(unit, player_one)
+        elif isinstance(unit, Obstacle) :
+            grid[iy][ix] = self._symbol_for_obstacle(unit)
+
+    def _symbol_for_obstacle(self, unit):
+        mapping = {
+            Rocher : "O"
+        }
+        base = mapping.get(type(unit), "O")
+        return base
+
 
     def _symbol_for_unit(self, unit, player_one: bool):
         mapping = {
-            "Knight": "K",
-            "Pikeman": "P",
-            "Crossbowman": "C",
+            Knight: "K",
+            Pikeman: "P",
+            Crossbowman: "C",
         }
-        try:
-            base = mapping.get(unit.unit_type(), unit.unit_type()[0].upper())
-        except Exception:
-            base = "U"
+        base = mapping.get(type(unit), "U")
         return base if player_one else base.lower()
 
     # ------------------------------------------------------------------ #

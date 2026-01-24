@@ -11,7 +11,6 @@ from backend.Utils.Lanchester.lanchester import (
     resolve_general_class,
 )
 from backend.Utils.plotters import plot_lanchester
-from frontend.Graphics.PyScreen import PyScreen
 from frontend.Terminal import Screen
 from frontend.Terminal.NoAffiche import NoAffiche
 
@@ -110,6 +109,7 @@ def main():
 
         affichage = NoAffiche()
         if args.use_pygame:
+            from frontend.Graphics.PyScreen import PyScreen
             affichage = PyScreen(os.getcwd() + "/frontend/Graphics/pygame_assets/")
         elif args.use_curses:
             affichage = Screen()

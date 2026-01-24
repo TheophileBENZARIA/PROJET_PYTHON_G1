@@ -66,7 +66,7 @@ class Battle(GameMode):
                     # Print battle status
                     army1_count = len(self.army1.living_units())
                     army2_count = len(self.army2.living_units())
-                    print(f"Tick {self.tick}: Army1={army1_count} units, Army2={army2_count} units")
+                    #print(f"Tick {self.tick}: Army1={army1_count} units, Army2={army2_count} units")
             
             # Update display (this will handle input and events internally)
             result = self.affichage.afficher(self.map, army1=self.army1, army2=self.army2)

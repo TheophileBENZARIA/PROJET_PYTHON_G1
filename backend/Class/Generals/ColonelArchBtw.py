@@ -17,8 +17,14 @@ class ColonelArchBtw(General) :
                 knights = [e for e in enemy_units if isinstance(e, Knight)]
                 target = self.enemy_in_range(unit, knights)
             elif isinstance(unit, Knight) :
-                crossbowmans = [e for e in enemy_units if isinstance(e, Crossbowman)]
-                target = self.enemy_in_range(unit, crossbowmans)
+                my_cross =[e for e in self.army.living_units() if isinstance(e, Crossbowman)]
+                if self.enemy_in_range(unit,my_cross, 5) :
+                    crossbowmans = [e for e in enemy_units if isinstance(e, Crossbowman)]
+                    target = self.enemy_in_range(unit, crossbowmans)
+                else :
+                    target = self.enemy_in_range(unit, enemy_units)
+
+
 
             if target is not None :
                 targets.append((unit, target))

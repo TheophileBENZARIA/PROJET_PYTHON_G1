@@ -8,6 +8,7 @@ from backend.Class.Units.Castle import Castle
 from backend.Class.Units.Crossbowman import Crossbowman
 from backend.Class.Units.Elephant import Elephant
 from backend.Class.Units.Knight import Knight
+from backend.Class.Units.Monk import Monk
 from backend.Class.Units.Pikeman import Pikeman
 
 """
@@ -63,6 +64,7 @@ def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
                 elif char == 'P' : unit_class = Pikeman
                 elif char == 'H': unit_class = Castle
                 elif char == 'E' : unit_class = Elephant
+                elif char == 'M' : unit_class = Monk
                 if unit_class :
                     u1 = unit_class((x,y))
                     # Mirror horizontally: army2 units go to the opposite side

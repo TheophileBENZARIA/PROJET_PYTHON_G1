@@ -12,6 +12,7 @@ from backend.Class.Units.Castle import Castle
 from backend.Class.Units.Crossbowman import Crossbowman
 from backend.Class.Units.Elephant import Elephant
 from backend.Class.Units.Knight import Knight
+from backend.Class.Units.Monk import Monk
 from backend.Class.Units.Pikeman import Pikeman
 from backend.Class.Units.Unit import Unit
 from frontend.Affichage import Affichage
@@ -198,6 +199,7 @@ class Screen(Affichage):
             Crossbowman: "C",
             Castle : "H",
             Elephant : "E",
+            Monk : "M",
         }
         base = mapping.get(type(unit), "U")
         return base if player_one else base.lower()

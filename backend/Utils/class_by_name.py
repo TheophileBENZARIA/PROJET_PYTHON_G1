@@ -6,6 +6,7 @@ from backend.Class.Units.Castle import Castle
 from backend.Class.Units.Crossbowman import Crossbowman
 from backend.Class.Units.Elephant import Elephant
 from backend.Class.Units.Knight import Knight
+from backend.Class.Units.Monk import Monk
 from backend.Class.Units.Pikeman import Pikeman
 
 GENERAL_REGISTRY: dict[str, type] = {
@@ -33,7 +34,8 @@ UNIT_CLASSES = {
         "archer": Crossbowman,
         "melee": Knight,
         "castle" : Castle,
-        "elephant" : Elephant
+        "elephant" : Elephant,
+        "monk" : Monk,
         }
 
 @staticmethod

@@ -134,10 +134,10 @@ class Army:
         for action in orders:
 
             unit : Unit = action.unit
-
+            target: Unit = action.target
             # ATTAQUE
             if action.kind == "attack":
-                target : Unit = action.target
+
 
                 bonus = 0
                 for classe in target.classes:

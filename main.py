@@ -185,7 +185,7 @@ def main():
 
         gameMode.affichage = affichage
 
-        choice = input("Do you want to save this battle? (y/n): ")
+        choice = input("Do you want to save this battle? (y/N): ")
         if choice.lower().startswith("y"):
             gameMode.isSave = True
 

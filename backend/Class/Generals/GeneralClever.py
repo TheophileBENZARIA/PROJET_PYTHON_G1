@@ -43,8 +43,9 @@ class GeneralClever(General):
 
             if isinstance(unit, Monk):
                 allies = [a for a in self.army.living_units() if a.hp < a.max_hp ]
-                target = min(allies, key=lambda allie: self.__distance_sq(unit, allie))
-                targets.append((unit, target))
+                if allies:
+                    target = min(allies, key=lambda allie: self.__distance_sq(unit, allie))
+                    targets.append((unit, target))
 
         return targets
 

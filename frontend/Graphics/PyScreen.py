@@ -197,13 +197,7 @@ class PyScreen(Affichage) :
         self._draw_hp_bar(unit, iso_x, iso_y, unit_size)
 
     def afficher(self, map: Map, army1: Army, army2: Army):
-        render_offset_x = 0
-        render_offset_y = 0
-        if self.screen_shake > 0:
-            import random
-            render_offset_x = random.randint(-self.screen_shake, self.screen_shake)
-            render_offset_y = random.randint(-self.screen_shake, self.screen_shake)
-            self.screen_shake -= 1
+        
         # Handle input for camera movement and zoom
         input_result = self.handle_input()
         if input_result == "QUIT":
@@ -225,14 +219,15 @@ class PyScreen(Affichage) :
 
         for x in range(int(x_min) - 1, int(x_max) + 1):
             for y in range(int(y_min) - 1, int(y_max) + 1):
-                iso_x, iso_y = self.convert_to_iso((x,y))
-                # Use center positioning for proper isometric alignment
-                rect = tile_image.get_rect(center=(int(iso_x), int(iso_y)))
+                iso_x, iso_y = self.convert_to_iso((x, y))
+                rect = tile_image.get_rect(center=(iso_x, iso_y))
+                # On crée une copie pour ne pas modifier l'originale
+                temp_tile = tile_image.copy()
                 if (x + y) % 2 == 0:
-                    tile_image.set_alpha(230) # Un tout petit peu plus sombre
-                else:
-                    tile_image.set_alpha(255)
-                self.screen.blit(tile_image, rect.topleft)
+                    # On assombrit légèrement une tuile sur deux
+                    temp_tile.fill((200, 200, 200), special_flags=pygame.BLEND_RGB_MULT)
+                
+                self.screen.blit(temp_tile, rect.topleft)
         # Mise à jour de l'écran
 
         # Draw army1 units with blue border/indicator

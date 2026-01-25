@@ -1,6 +1,7 @@
 from backend.Class.Army import Army
 from backend.Class.Generals.General import General
 from backend.Class.Map import Map
+from backend.Class.Units.Monk import Monk
 
 
 class CaptainBraindead(General):
@@ -30,6 +31,13 @@ class CaptainBraindead(General):
                 )
                 if target and self.__distance_sq(unit, target) < unit.line_of_sight**2:
                     targets.append((unit, target))
+
+            if isinstance(unit, Monk):
+                allies = [a for a in self.army.living_units() if a.hp < a.max_hp ]
+                target = min(allies, key=lambda allie: self.__distance_sq(unit, allie))
+                if target and self.__distance_sq(unit, target) < unit.line_of_sight ** 2:
+                    targets.append((unit, target))
+
 
         return targets
 

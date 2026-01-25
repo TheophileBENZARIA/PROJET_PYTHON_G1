@@ -2,12 +2,13 @@ from math import sin
 from math import cos
 
 from backend.Class.Map import Map
-from backend.Class.Units import Unit
 from backend.Class.Action import Action
 import random  # NEW: for ranged dodge rolls
 
+from backend.Class.Units.Castle import Castle
 from backend.Class.Units.Elephant import Elephant
 from backend.Class.Units.Monk import Monk
+from backend.Class.Units.Unit import Unit
 
 
 class Army:
@@ -19,6 +20,12 @@ class Army:
     def add_unit(self, unit: Unit):
         unit.army = self
         self.units.append(unit)
+
+    def remove_unit(self, unit):
+        for i in range(len(self.units)):
+            if self.units[i] == unit :
+                del self.units[i]
+                break
 
     def isEmpty(self):
         return len(self.living_units()) <= 0
@@ -58,7 +65,7 @@ class Army:
                 if dist2 <= (unit.range+ unit.size/2 + target.size/2) ** 2:
                     if isinstance(unit, Monk):
                         if target in otherArmy.living_units() :
-                            if unit.cooldown <= 0:
+                            if unit.cooldown <= 0 and (not isinstance(target, Elephant) or not isinstance(target, Castle) or ((isinstance(target, Elephant) or isinstance(target, Castle)) and dist2 <= (unit.convert_range+ unit.size/2 + target.size/2) ** 2)):
                                 actions.append(Action(unit, "conversion", target))
                         elif target in self.living_units() :
                             actions.append(Action(unit, "heal", target))
@@ -113,7 +120,7 @@ class Army:
 
 
 
-    def execOrder(self, orders: Action, otherArmy):
+    def execOrder(self, orders: Action, otherArmy: Army):
         for unit in self.units:
             if unit.cooldown > 0: unit.cooldown -= 1
         # Cette fonction applique les dégâts avec les bonus sur l'armée adverse et
@@ -126,11 +133,11 @@ class Army:
 
         for action in orders:
 
-            unit = action.unit
+            unit : Unit = action.unit
 
             # ATTAQUE
             if action.kind == "attack":
-                target = action.target
+                target : Unit = action.target
 
                 bonus = 0
                 for classe in target.classes:
@@ -178,10 +185,11 @@ class Army:
                     unit.position = new_pos
             #Monk healing
             elif action.kind == "heal" :
-                pass
+                target.hp = min(target.max_hp, target.hp+unit.attack)
             #Monk convert
             elif action.kind == "conversion":
-                pass
+                otherArmy.remove_unit(target)
+                self.add_unit(target)
 
             if isinstance(unit, Elephant) :
                 for enemy in otherArmy.living_units():

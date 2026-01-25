@@ -6,6 +6,8 @@ from backend.Class.Units import Unit
 from backend.Class.Action import Action
 import random  # NEW: for ranged dodge rolls
 
+from backend.Class.Units.Elephant import Elephant
+
 
 class Army:
     def __init__(self):
@@ -87,11 +89,12 @@ class Army:
                 if collisionA:
                     # print(unit,allie,vector,unit.position, allie.position)
                     break
-        for enemie in otherArmy.living_units():
-            collisionE = self.test_collision(vector, unit, enemie)
-            if collisionE:
+        if not isinstance(unit, Elephant) :
+            for enemie in otherArmy.living_units():
+                collisionE = self.test_collision(vector, unit, enemie)
+                if collisionE:
                 # print(unit, enemie,vector, unit.position, enemie.position)
-                break
+                    break
         for obstacle in map.obstacles:
             collisionO = self.test_collision(vector, unit, obstacle)
             if collisionO: break
@@ -165,6 +168,10 @@ class Army:
                         unit.position = new_pos
                 else:
                     unit.position = new_pos
+            if isinstance(unit, Elephant) :
+                for enemy in otherArmy.living_units():
+                    if (unit.position[0]-enemy.position[0])**2 + (unit.position[1]-enemy.position[1])**2 <= 0.25**2 :
+                        enemy.hp-=unit.attack
 
     def fight(self, map: Map, otherArmy):
         # print("me",len(self.living_units()), len(otherArmy.living_units()))

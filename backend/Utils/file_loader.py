@@ -6,6 +6,7 @@ from backend.Class.Map import Map
 from backend.Class.Obstacles.Rocher import Rocher
 from backend.Class.Units.Castle import Castle
 from backend.Class.Units.Crossbowman import Crossbowman
+from backend.Class.Units.Elephant import Elephant
 from backend.Class.Units.Knight import Knight
 from backend.Class.Units.Pikeman import Pikeman
 
@@ -30,7 +31,8 @@ def load_mirrored_army_from_file(path: str) -> tuple[Army, Army] :
     pass
 """
 from backend.Class.Army import Army
-from backend.Class.Units import Unit
+
+
 
 def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
     army1 = Army()
@@ -60,6 +62,7 @@ def load_mirrored_army_from_file(path: str) -> tuple[Army, Army]:
                 elif char == 'C': unit_class = Crossbowman
                 elif char == 'P' : unit_class = Pikeman
                 elif char == 'H': unit_class = Castle
+                elif char == 'E' : unit_class = Elephant
                 if unit_class :
                     u1 = unit_class((x,y))
                     # Mirror horizontally: army2 units go to the opposite side

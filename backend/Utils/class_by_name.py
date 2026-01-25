@@ -4,6 +4,7 @@ from backend.Class.Generals.GeneralClever import GeneralClever
 from backend.Class.Generals.MajorDaft import MajorDaft
 from backend.Class.Units.Castle import Castle
 from backend.Class.Units.Crossbowman import Crossbowman
+from backend.Class.Units.Elephant import Elephant
 from backend.Class.Units.Knight import Knight
 from backend.Class.Units.Pikeman import Pikeman
 
@@ -31,7 +32,8 @@ UNIT_CLASSES = {
         "crossbowman": Crossbowman,
         "archer": Crossbowman,
         "melee": Knight,
-        "castle" : Castle
+        "castle" : Castle,
+        "elephant" : Elephant
         }
 
 @staticmethod

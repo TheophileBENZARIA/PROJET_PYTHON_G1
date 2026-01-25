@@ -5,7 +5,7 @@ from abc import abstractmethod
 class Unit():
 
 
-    def __init__(self, hp: int, attack: int, armor: int,
+    def __init__(self, max_hp: int, attack: int, armor: int,
                  speed: int, range_: int, reload_time: int, ligne_of_sight:int,position: tuple[float]= None, size :float=1, classes=None, bonuses=None):
 
 
@@ -13,7 +13,8 @@ class Unit():
         self.army = None
 
         # caractéristique
-        self.hp = hp
+        self.max_hp = max_hp
+        self.hp = max_hp
         self._attack = attack
         self.armor = armor
         self.speed = speed

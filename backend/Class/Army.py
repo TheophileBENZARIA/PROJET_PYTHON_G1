@@ -58,7 +58,8 @@ class Army:
                 if dist2 <= (unit.range+ unit.size/2 + target.size/2) ** 2:
                     if isinstance(unit, Monk):
                         if target in otherArmy.living_units() :
-                            actions.append(Action(unit, "conversion", target))
+                            if unit.cooldown <= 0:
+                                actions.append(Action(unit, "conversion", target))
                         elif target in self.living_units() :
                             actions.append(Action(unit, "heal", target))
                     elif target in otherArmy.living_units():
@@ -152,7 +153,7 @@ class Army:
                         continue
 
                 # Compute applied damage (never heal)
-                damage = max(1, (unit.attack + bonus) - target.armor)
+                damage = max(0, (unit.attack + bonus) - target.armor)
                 target.hp -= damage
                 if target.hp < 0:
                     target.hp = 0
@@ -175,6 +176,13 @@ class Army:
                         unit.position = new_pos
                 else:
                     unit.position = new_pos
+            #Monk healing
+            elif action.kind == "heal" :
+                pass
+            #Monk convert
+            elif action.kind == "conversion":
+                pass
+
             if isinstance(unit, Elephant) :
                 for enemy in otherArmy.living_units():
                     if (unit.position[0]-enemy.position[0])**2 + (unit.position[1]-enemy.position[1])**2 <= 0.25**2 :

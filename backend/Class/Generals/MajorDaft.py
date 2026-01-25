@@ -23,7 +23,7 @@ class MajorDaft(General):
                     targets.append((unit, target))
                 else :
                     if unit.cooldown > 0 :
-                        allies = [a for a in self.army.living_units() if a.hp < a.max_hp ]
+                        allies = [a for a in self.army.living_units() if a.hp < a.max_hp and a != unit]
                         if allies :
                             target = min(allies, key=lambda allie: self.__distance_sq(unit, allie))
                             targets.append((unit, target))

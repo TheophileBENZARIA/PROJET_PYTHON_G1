@@ -70,7 +70,7 @@ class Army:
                         if target in otherArmy.living_units() :
                             if unit.cooldown <= 0:
                                 actions.append(Action(unit, "conversion", target))
-                        elif target in self.living_units() :
+                        elif target in self.living_units() and target != unit:
                             actions.append(Action(unit, "heal", target))
                     elif target in otherArmy.living_units():
                         if unit.cooldown <= 0:
@@ -202,11 +202,15 @@ class Army:
             #Monk healing
             elif action.kind == "heal" :
                 target.hp = min(target.max_hp, target.hp+unit.attack)
+                unit.last_attacked = "heal"
             #Monk convert
             elif action.kind == "conversion":
                 otherArmy.remove_unit(target)
                 self.add_unit(target)
                 unit.cooldown = unit.reload_time
+                target.last_attacker = None
+                target.last_attacked = None
+                unit.last_attacked = "conversion"
 
             if isinstance(unit, Elephant) :
                 for enemy in otherArmy.living_units():

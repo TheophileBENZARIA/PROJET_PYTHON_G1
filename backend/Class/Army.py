@@ -7,6 +7,7 @@ from backend.Class.Action import Action
 import random  # NEW: for ranged dodge rolls
 
 from backend.Class.Units.Elephant import Elephant
+from backend.Class.Units.Monk import Monk
 
 
 class Army:
@@ -43,42 +44,45 @@ class Army:
             targets = {u: t for u, t in targets}
 
         for unit, target in targets.items():
-            if unit.is_alive() and target.is_alive():
-                ux, uy = unit.position
-                tx, ty = target.position
+            if isinstance(unit, Monk) :
+                pass
+            else :
+                if unit.is_alive() and target in otherArmy.living_units():
+                    ux, uy = unit.position
+                    tx, ty = target.position
 
-                dx = tx - ux
-                dy = ty - uy
-                dist2 = dx * dx + dy * dy
+                    dx = tx - ux
+                    dy = ty - uy
+                    dist2 = dx * dx + dy * dy
 
-                # print(unit, target, dist2, unit.range,dist2 <= unit.range **2)
+                    # print(unit, target, dist2, unit.range,dist2 <= unit.range **2)
 
-                # ATTAQUE
-                if dist2 <= (unit.range+ unit.size/2 + target.size/2) ** 2:
-                    if unit.cooldown <= 0:
-                        actions.append(Action(unit, "attack", target))
-                else:
-                    vector = (dx / (dist2 ** 0.5) * unit.speed,dy / (dist2 ** 0.5) * unit.speed)
-                    #print(vector)
-                    if self.try_collision(unit,map,vector,otherArmy):
-                        vector1 = vector[0] * cos(1) - vector[1] * sin(1), vector[0] * sin(1) + vector[1] * cos(1)
-                        #print(vector1)
-                        if self.try_collision(unit,map,vector1,otherArmy) :
-                            vector2 = vector[0] * cos(-1) - vector[1] * sin(-1), vector[0] * sin(-1) + vector[1] * cos(-1)
-                            #print(vector2)
-                            if self.try_collision(unit,map, vector2,otherArmy):
-                                vector = None
-                            else :
-                                vector = vector2
-                        else :
-                            vector = vector1
+                    # ATTAQUE
+                    if dist2 <= (unit.range + unit.size / 2 + target.size / 2) ** 2:
+                        if unit.cooldown <= 0:
+                            actions.append(Action(unit, "attack", target))
+                    else:
+                        vector = (dx / (dist2 ** 0.5) * unit.speed, dy / (dist2 ** 0.5) * unit.speed)
+                        # print(vector)
+                        if self.try_collision(unit, map, vector, otherArmy):
+                            vector1 = vector[0] * cos(1) - vector[1] * sin(1), vector[0] * sin(1) + vector[1] * cos(1)
+                            # print(vector1)
+                            if self.try_collision(unit, map, vector1, otherArmy):
+                                vector2 = vector[0] * cos(-1) - vector[1] * sin(-1), vector[0] * sin(-1) + vector[
+                                    1] * cos(-1)
+                                # print(vector2)
+                                if self.try_collision(unit, map, vector2, otherArmy):
+                                    vector = None
+                                else:
+                                    vector = vector2
+                            else:
+                                vector = vector1
 
-
-                    if vector is not None :
-                        vector = vector[0] +ux, vector[1]+uy
-                        actions.append(
-                            Action(unit, "move", vector)
-                        )
+                        if vector is not None:
+                            vector = vector[0] + ux, vector[1] + uy
+                            actions.append(
+                                Action(unit, "move", vector)
+                            )
         return actions
 
     def try_collision(self,unit,map,vector, otherArmy):

@@ -60,12 +60,15 @@ class Army:
                 dist2 = dx * dx + dy * dy
 
                 # print(unit, target, dist2, unit.range,dist2 <= unit.range **2)
+                range_ = unit.range
+                if isinstance(unit, Monk) and (isinstance(target, Elephant) or isinstance(target, Castle)) :
+                        range_ = unit.convert_range
 
                 # ATTAQUE
-                if dist2 <= (unit.range+ unit.size/2 + target.size/2) ** 2:
+                if dist2 <= (range_+ unit.size/2 + target.size/2) ** 2:
                     if isinstance(unit, Monk):
                         if target in otherArmy.living_units() :
-                            if unit.cooldown <= 0 and (not isinstance(target, Elephant) or not isinstance(target, Castle) or ((isinstance(target, Elephant) or isinstance(target, Castle)) and dist2 <= (unit.convert_range+ unit.size/2 + target.size/2) ** 2)):
+                            if unit.cooldown <= 0:
                                 actions.append(Action(unit, "conversion", target))
                         elif target in self.living_units() :
                             actions.append(Action(unit, "heal", target))

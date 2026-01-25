@@ -22,7 +22,8 @@ class PyScreen(Affichage) :
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption("Affichage d'une tile")
         # Chargement de l'image
-
+        
+        self.screen_shake = 0
 
         self.offset_x, self.offset_y = 0, 0
         self.zoom_factor = 20
@@ -181,6 +182,11 @@ class PyScreen(Affichage) :
         unit_size = int(unit.size * self.zoom_factor * self.unit_scale_multiplier)
         unit_image = pygame.transform.scale(IMAGE, (unit_size, unit_size))
         rect = unit_image.get_rect(center=(iso_x, iso_y))
+        # Petite ombre portée pour plus de réalisme
+        shadow_surface = pygame.Surface((unit_size, unit_size // 2))
+        shadow_surface.set_alpha(100) # Transparence
+        pygame.draw.ellipse(shadow_surface, (0, 0, 0), (0, 0, unit_size, unit_size // 2))
+        self.screen.blit(shadow_surface, (iso_x - unit_size // 2, iso_y))
         self.screen.blit(unit_image, rect.topleft)
         
         # Draw colored border circle to identify army
@@ -191,6 +197,13 @@ class PyScreen(Affichage) :
         self._draw_hp_bar(unit, iso_x, iso_y, unit_size)
 
     def afficher(self, map: Map, army1: Army, army2: Army):
+        render_offset_x = 0
+        render_offset_y = 0
+        if self.screen_shake > 0:
+            import random
+            render_offset_x = random.randint(-self.screen_shake, self.screen_shake)
+            render_offset_y = random.randint(-self.screen_shake, self.screen_shake)
+            self.screen_shake -= 1
         # Handle input for camera movement and zoom
         input_result = self.handle_input()
         if input_result == "QUIT":
@@ -215,6 +228,10 @@ class PyScreen(Affichage) :
                 iso_x, iso_y = self.convert_to_iso((x,y))
                 # Use center positioning for proper isometric alignment
                 rect = tile_image.get_rect(center=(int(iso_x), int(iso_y)))
+                if (x + y) % 2 == 0:
+                    tile_image.set_alpha(230) # Un tout petit peu plus sombre
+                else:
+                    tile_image.set_alpha(255)
                 self.screen.blit(tile_image, rect.topleft)
         # Mise à jour de l'écran
 

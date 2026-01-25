@@ -1,4 +1,3 @@
-from encodings.aliases import aliases
 
 from backend.Class.Generals.General import General
 from backend.Class.Units.Monk import Monk
@@ -20,13 +19,16 @@ class MajorDaft(General):
                 continue
             target = min(enemies, key=lambda enemy: self.__distance_sq(unit, enemy))
             if target is not None:
-                targets.append((unit, target))
-            if isinstance(unit, Monk):
-                allies = [a for a in self.army.living_units() if a.hp < a.max_hp ]
-                if allies :
-                    target = min(allies, key=lambda allie: self.__distance_sq(unit, allie))
+                if not isinstance(unit, Monk):
                     targets.append((unit, target))
-
+                else :
+                    if unit.cooldown > 0 :
+                        allies = [a for a in self.army.living_units() if a.hp < a.max_hp ]
+                        if allies :
+                            target = min(allies, key=lambda allie: self.__distance_sq(unit, allie))
+                            targets.append((unit, target))
+                    else:
+                        targets.append((unit, target))
         return targets
 
     @property

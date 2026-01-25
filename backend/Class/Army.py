@@ -46,7 +46,6 @@ class Army:
         # Il faut aussi verifier que l'unité peut avancer (elle n'est pas face a un mur ou une autre unité)
         # Il faut vérifier que le cooldown est a zero si on veut attaqué et si le cooldown n'est pas à 0 il faut le diminuer
         actions = []
-
         if isinstance(targets, list):
             targets = {u: t for u, t in targets}
 
@@ -62,7 +61,8 @@ class Army:
                 # print(unit, target, dist2, unit.range,dist2 <= unit.range **2)
                 range_ = unit.range
                 if isinstance(unit, Monk) and (isinstance(target, Elephant) or isinstance(target, Castle)) :
-                        range_ = unit.convert_range
+                    range_ = unit.convert_range
+
 
                 # ATTAQUE
                 if dist2 <= (range_+ unit.size/2 + target.size/2) ** 2:
@@ -78,6 +78,7 @@ class Army:
                 else:
                     vector = (dx / (dist2 ** 0.5) * unit.speed,dy / (dist2 ** 0.5) * unit.speed)
                     #print(vector)
+                    """
                     if self.try_collision(unit,map,vector,otherArmy):
                         vector1 = vector[0] * cos(1) - vector[1] * sin(1), vector[0] * sin(1) + vector[1] * cos(1)
                         #print(vector1)
@@ -90,14 +91,26 @@ class Army:
                                 vector = vector2
                         else :
                             vector = vector1
-
-
-                    if vector is not None :
+                    """
+                    collision, vector = self.test_vector(unit, map, vector, otherArmy, 4)
+                    if not collision :
                         vector = vector[0] +ux, vector[1]+uy
                         actions.append(
                             Action(unit, "move", vector)
                         )
         return actions
+
+    def test_vector(self,unit,map,vector, otherArmy, profondeur):
+        assert profondeur >=0
+        collision, find_vector = True, vector
+        if profondeur > 0:
+            collision, find_vector = self.test_vector(unit,map,vector, otherArmy, profondeur-1)
+        if not collision : return collision, find_vector
+        find_vector = vector[0] * cos(profondeur*0.5) - vector[1] * sin(profondeur*0.5), vector[0] * sin(profondeur*0.5) + vector[1] * cos(profondeur*0.5)
+        collision = self.try_collision(unit,map,find_vector,otherArmy)
+        if not collision: return collision, find_vector
+        find_vector = vector[0] * cos(-1*profondeur*0.5) - vector[1] * sin(-1*profondeur*0.5), vector[0] * sin(-1*profondeur*0.5) + vector[1] * cos(-1*profondeur*0.5)
+        return self.try_collision(unit,map,find_vector,otherArmy), find_vector
 
     def try_collision(self,unit,map,vector, otherArmy):
         collisionE, collisionA, collisionO = False, False, False
@@ -193,6 +206,7 @@ class Army:
             elif action.kind == "conversion":
                 otherArmy.remove_unit(target)
                 self.add_unit(target)
+                unit.cooldown = unit.reload_time
 
             if isinstance(unit, Elephant) :
                 for enemy in otherArmy.living_units():

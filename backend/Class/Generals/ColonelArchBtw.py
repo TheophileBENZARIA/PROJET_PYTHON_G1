@@ -1,6 +1,7 @@
 from backend.Class.Generals.General import General
 from backend.Class.Units.Crossbowman import Crossbowman
 from backend.Class.Units.Knight import Knight
+from backend.Class.Units.Monk import Monk
 from backend.Class.Units.Pikeman import Pikeman
 
 
@@ -45,6 +46,12 @@ class ColonelArchBtw(General) :
                     )
                     if target is not None :
                         targets.append((unit, target))
+
+            if isinstance(unit,Monk):
+                allies = [a for a in self.army.living_units() if a.hp < a.max_hp]
+                if allies:
+                    target = min(allies, key=lambda allie: self.__distance_sq(unit, allie))
+                    targets.append((unit, target))
 
         return targets
 

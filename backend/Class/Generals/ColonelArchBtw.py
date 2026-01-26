@@ -19,13 +19,20 @@ class ColonelArchBtw(General) :
             #    targets.append((unit, unit.last_attacked))
             #else :
             if len(otherArmy.living_units()) > 40 :
-                if isinstance(unit, Monk) :
-                    allies = [a for a in self.army.living_units() if a.hp < a.max_hp and a != unit]
-                    target = self.enemy_in_range(unit, allies)
-                    if target: targets.append((unit, target))
-                else :
-                    target = self.enemy_in_range(unit,otherArmy.living_units())
-                    if target : targets.append((unit, target))
+                if unit.position is None:
+                    continue
+                target = min(otherArmy.living_units(), key=lambda enemy: self.__distance_sq(unit, enemy))
+                if target is not None:
+                    if not isinstance(unit, Monk):
+                        targets.append((unit, target))
+                    else:
+                        if unit.cooldown > 0:
+                            allies = [a for a in self.army.living_units() if a.hp < a.max_hp and a != unit]
+                            if allies:
+                                target = min(allies, key=lambda allie: self.__distance_sq(unit, allie))
+                                targets.append((unit, target))
+                        else:
+                            targets.append((unit, target))
 
             else:
                 if not isinstance(unit, Monk):
@@ -105,13 +112,14 @@ class ColonelArchBtw(General) :
                             if monks: target = self.enemy_in_range(unit, monks, 9)
                             if not target: target = self.enemy_in_range(unit, allies)
                     else:  # partie conversion
-                        monks = [e for e in enemy_units if isinstance(e, Monk)]
-                        if monks:
-                            target = self.enemy_in_range(unit, monks)
+                        elephants = [e for e in enemy_units if isinstance(e, Elephant)]
+                        if elephants:
+                            target = self.enemy_in_range(unit, elephants)
                         else:
-                            elephants = [e for e in enemy_units if isinstance(e, Elephant)]
-                            if elephants:
-                                target = self.enemy_in_range(unit, elephants)
+                            monks = [e for e in enemy_units if isinstance(e, Monk)]
+                            if monks:
+                                target = self.enemy_in_range(unit, monks)
+
 
                         if not target:
                             target = self.enemy_in_range(unit, enemy_units)

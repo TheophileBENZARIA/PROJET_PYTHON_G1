@@ -63,10 +63,15 @@ class ColonelArchBtw(General) :
                             targets.append((unit, target))
 
             else :
-                if unit.cooldown > 50 and unit.last_attacked is not None:
+                if unit.cooldown > 40 and unit.last_attacked is not None:
+
                     if unit.last_attacked is "conversion" :
                         unit.last_attacked = max(self.army.living_units(), key=lambda allie: self.__distance_sq(unit, allie))
                     target = unit.last_attacked
+
+                    monks = [e for e in enemy_units if isinstance(e, Monk)]
+                    if monks:
+                        target = self.enemy_in_range(unit, monks)
 
 
                 elif unit.cooldown > 0 : #partie heal
@@ -74,13 +79,13 @@ class ColonelArchBtw(General) :
                     if allies:
                         target = min(allies, key=lambda allie: self.__distance_sq(unit, allie))
                 else : #partie conversion
-                    elephants = [e for e in enemy_units if isinstance(e, Elephant)]
-                    if elephants:
-                        target = self.enemy_in_range(unit, elephants)
+                    monks = [e for e in enemy_units if isinstance(e, Monk)]
+                    if monks:
+                        target = self.enemy_in_range(unit, monks)
                     else:
-                        monks = [e for e in enemy_units if isinstance(e, Monk)]
-                        if monks :
-                            target = self.enemy_in_range(unit, monks)
+                        elephants = [e for e in enemy_units if isinstance(e, Elephant)]
+                        if elephants :
+                            target = self.enemy_in_range(unit, elephants)
 
                     if not target :
                         target = self.enemy_in_range(unit, enemy_units)

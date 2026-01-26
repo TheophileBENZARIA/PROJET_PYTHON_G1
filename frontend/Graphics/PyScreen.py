@@ -6,6 +6,7 @@ import pygame
 
 from backend.Class.Army import Army
 from backend.Class.Map import Map
+from backend.Class.Obstacles.Rocher import Rocher
 from backend.Class.Units.Castle import Castle
 from backend.Class.Units.Crossbowman import Crossbowman
 from backend.Class.Units.Elephant import Elephant
@@ -190,6 +191,8 @@ class PyScreen(Affichage):
             IMAGE = self.CASTLE_IMAGE
         elif isinstance(unit, Elephant):
             IMAGE = self.ELEPHANT_IMAGE
+        elif isinstance(unit, Rocher):
+            IMAGE = self.ROCHER_IMAGE
 
         # Make units bigger by multiplying with unit_scale_multiplier
         unit_size = int(unit.size * self.zoom_factor * self.unit_scale_multiplier)
@@ -197,12 +200,13 @@ class PyScreen(Affichage):
         rect = unit_image.get_rect(center=(iso_x, iso_y))
         self.screen.blit(unit_image, rect.topleft)
 
-        # Draw colored border circle to identify army
-        border_radius = unit_size // 2 + 3
-        pygame.draw.circle(self.screen, army_color, (int(iso_x), int(iso_y)), border_radius, 2)
+        if army_color is not None:
+            # Draw colored border circle to identify army
+            border_radius = unit_size // 2 + 3
+            pygame.draw.circle(self.screen, army_color, (int(iso_x), int(iso_y)), border_radius, 2)
 
-        # Draw HP bar above unit
-        self._draw_hp_bar(unit, iso_x, iso_y, unit_size)
+            # Draw HP bar above unit
+            self._draw_hp_bar(unit, iso_x, iso_y, unit_size)
 
     def afficher(self, map: Map, army1: Army, army2: Army):
         # Handle input for camera movement and zoom
@@ -243,6 +247,9 @@ class PyScreen(Affichage):
         # Draw army2 units with red border/indicator
         for unit in army2.living_units():
             self._draw_unit(unit, (255, 50, 50))  # Red for army2
+
+        for unit in map.obstacles:
+            self._draw_unit(unit, None)
 
         # Draw minimap if enabled
         if self.show_minimap:

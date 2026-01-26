@@ -79,6 +79,15 @@ class PyScreen(Affichage):
         self.font = pygame.font.Font(None, 24)
         self.small_font = pygame.font.Font(None, 18)
 
+        actual_tile_size = int(self.tile_size * self.zoom_factor) + 4
+        base_tile = pygame.transform.scale(self.TILE_IMAGE, (actual_tile_size, actual_tile_size))
+        
+        self.TILE_LIGHT = base_tile.copy()
+        self.TILE_LIGHT.fill((60, 180, 40), special_flags=pygame.BLEND_RGB_MULT)
+        
+        self.TILE_DARK = base_tile.copy()
+        self.TILE_DARK.fill((45, 150, 30), special_flags=pygame.BLEND_RGB_MULT)
+
     def _get_interpolated_position(self, unit):
         """Get the interpolated position for smooth movement animation."""
         if unit.position is None:
@@ -222,9 +231,13 @@ class PyScreen(Affichage):
         for x in range(int(x_min) - 1, int(x_max) + 1):
             for y in range(int(y_min) - 1, int(y_max) + 1):
                 iso_x, iso_y = self.convert_to_iso((x, y))
-                # Use center positioning for proper isometric alignment
-                rect = tile_image.get_rect(center=(int(iso_x), int(iso_y)))
-                self.screen.blit(tile_image, rect.topleft)
+                
+                # On choisit l'image déjà prête
+                current_tile = self.TILE_LIGHT if (x + y) % 2 == 0 else self.TILE_DARK
+                
+                rect = current_tile.get_rect(center=(int(iso_x), int(iso_y)))
+                self.screen.blit(current_tile, rect.topleft)
+
         # Mise à jour de l'écran
 
         # Draw army1 units with blue border/indicator

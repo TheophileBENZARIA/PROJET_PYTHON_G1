@@ -22,7 +22,8 @@ class PyScreen(Affichage) :
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption("Affichage d'une tile")
         # Chargement de l'image
-
+        
+        self.screen_shake = 0
 
         self.offset_x, self.offset_y = 0, 0
         self.zoom_factor = 20
@@ -181,6 +182,11 @@ class PyScreen(Affichage) :
         unit_size = int(unit.size * self.zoom_factor * self.unit_scale_multiplier)
         unit_image = pygame.transform.scale(IMAGE, (unit_size, unit_size))
         rect = unit_image.get_rect(center=(iso_x, iso_y))
+        # Petite ombre portée pour plus de réalisme
+        shadow_surface = pygame.Surface((unit_size, unit_size // 2))
+        shadow_surface.set_alpha(100) # Transparence
+        pygame.draw.ellipse(shadow_surface, (0, 0, 0), (0, 0, unit_size, unit_size // 2))
+        self.screen.blit(shadow_surface, (iso_x - unit_size // 2, iso_y))
         self.screen.blit(unit_image, rect.topleft)
         
         # Draw colored border circle to identify army
@@ -191,6 +197,7 @@ class PyScreen(Affichage) :
         self._draw_hp_bar(unit, iso_x, iso_y, unit_size)
 
     def afficher(self, map: Map, army1: Army, army2: Army):
+        
         # Handle input for camera movement and zoom
         input_result = self.handle_input()
         if input_result == "QUIT":
@@ -212,10 +219,15 @@ class PyScreen(Affichage) :
 
         for x in range(int(x_min) - 1, int(x_max) + 1):
             for y in range(int(y_min) - 1, int(y_max) + 1):
-                iso_x, iso_y = self.convert_to_iso((x,y))
-                # Use center positioning for proper isometric alignment
-                rect = tile_image.get_rect(center=(int(iso_x), int(iso_y)))
-                self.screen.blit(tile_image, rect.topleft)
+                iso_x, iso_y = self.convert_to_iso((x, y))
+                rect = tile_image.get_rect(center=(iso_x, iso_y))
+                # On crée une copie pour ne pas modifier l'originale
+                temp_tile = tile_image.copy()
+                if (x + y) % 2 == 0:
+                    # On assombrit légèrement une tuile sur deux
+                    temp_tile.fill((200, 200, 200), special_flags=pygame.BLEND_RGB_MULT)
+                
+                self.screen.blit(temp_tile, rect.topleft)
         # Mise à jour de l'écran
 
         # Draw army1 units with blue border/indicator

@@ -136,7 +136,7 @@ class Army:
 
 
 
-    def execOrder(self, orders: Action, otherArmy: Army):
+    def execOrder(self, orders: Action, otherArmy: "Army"):
         for unit in self.units:
             if unit.cooldown > 0: unit.cooldown -= 1
         # Cette fonction applique les dégâts avec les bonus sur l'armée adverse et

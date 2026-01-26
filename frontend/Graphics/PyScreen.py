@@ -6,8 +6,11 @@ import pygame
 
 from backend.Class.Army import Army
 from backend.Class.Map import Map
+from backend.Class.Units.Castle import Castle
 from backend.Class.Units.Crossbowman import Crossbowman
+from backend.Class.Units.Elephant import Elephant
 from backend.Class.Units.Knight import Knight
+from backend.Class.Units.Monk import Monk
 from backend.Class.Units.Pikeman import Pikeman
 from frontend.Affichage import Affichage
 
@@ -36,6 +39,10 @@ class PyScreen(Affichage):
         self.KNIGHT_IMAGE = pygame.image.load(self.path + "knight.bmp").convert_alpha()
         self.PIKEMAN_IMAGE = pygame.image.load(self.path + "pikeman.bmp").convert_alpha()
         self.CROSSBOWMAN_IMAGE = pygame.image.load(self.path + "crossbowman.bmp").convert_alpha()
+        self.ROCHER_IMAGE = pygame.image.load(self.path + "rocher.png")
+        self.CASTLE_IMAGE = pygame.image.load(self.path + "castle.png")
+        self.ELEPHANT_IMAGE = pygame.image.load(self.path + "elephant.png")
+        self.MONK_IMAGE = pygame.image.load(self.path + "monk.png")
 
         # For smooth movement animation
         self.unit_previous_positions = {}  # unit_id -> (x, y) - position before animation
@@ -117,14 +124,7 @@ class PyScreen(Affichage):
 
     def _get_max_hp(self, unit):
         """Get the maximum HP for a unit based on its type."""
-        if isinstance(unit, Knight):
-            return 100
-        elif isinstance(unit, Pikeman):
-            return 55
-        elif isinstance(unit, Crossbowman):
-            return 35
-        else:
-            return max(unit.hp, 1)  # Fallback to current HP if unknown type
+        return unit.max_hp # Fallback to current HP if unknown type
 
     def _draw_hp_bar(self, unit, iso_x, iso_y, unit_size):
         """Draw HP bar above a unit."""
@@ -175,6 +175,12 @@ class PyScreen(Affichage):
             IMAGE = self.PIKEMAN_IMAGE
         elif isinstance(unit, Crossbowman):
             IMAGE = self.CROSSBOWMAN_IMAGE
+        elif isinstance(unit, Monk):
+            IMAGE = self.MONK_IMAGE
+        elif isinstance(unit, Castle):
+            IMAGE = self.CASTLE_IMAGE
+        elif isinstance(unit, Elephant):
+            IMAGE = self.ELEPHANT_IMAGE
 
         # Make units bigger by multiplying with unit_scale_multiplier
         unit_size = int(unit.size * self.zoom_factor * self.unit_scale_multiplier)

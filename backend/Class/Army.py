@@ -205,12 +205,13 @@ class Army:
                 unit.last_attacked = "heal"
             #Monk convert
             elif action.kind == "conversion":
-                otherArmy.remove_unit(target)
-                self.add_unit(target)
-                unit.cooldown = unit.reload_time
-                target.last_attacker = None
-                target.last_attacked = None
-                unit.last_attacked = "conversion"
+                if target in otherArmy.living_units() :
+                    otherArmy.remove_unit(target)
+                    self.add_unit(target)
+                    unit.cooldown = unit.reload_time
+                    target.last_attacker = None
+                    target.last_attacked = None
+                    unit.last_attacked = "conversion"
 
             if isinstance(unit, Elephant) :
                 for enemy in otherArmy.living_units():

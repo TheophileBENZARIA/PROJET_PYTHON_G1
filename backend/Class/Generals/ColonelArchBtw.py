@@ -1,3 +1,4 @@
+
 from backend.Class.Generals.General import General
 from backend.Class.Units.Crossbowman import Crossbowman
 from backend.Class.Units.Elephant import Elephant
@@ -9,6 +10,7 @@ from backend.Class.Units.Unit import Unit
 
 class ColonelArchBtw(General) :
     def getTargets(self, map, otherArmy):
+        deja_pris= set()
         targets=[]
         enemy_units = otherArmy.living_units()
         for unit in self.army.living_units() :
@@ -18,7 +20,7 @@ class ColonelArchBtw(General) :
             #else :
             if not isinstance(unit, Monk):
                 if isinstance(unit, Crossbowman):
-                    pikemans = [e for e in enemy_units if isinstance(e, Pikeman)]
+                    pikemans = [e for e in enemy_units if isinstance(e, Pikeman) and e not in deja_pris]
                     target = self.enemy_in_range(unit, pikemans)
                     monks = [e for e in enemy_units if isinstance(e, Monk)]
                     if monks :
@@ -31,19 +33,29 @@ class ColonelArchBtw(General) :
                             target = proxy_monk
 
                 elif isinstance(unit, Pikeman):
-                    elephants = [e for e in enemy_units if isinstance(e, Elephant)]
-                    if elephants :
-                        target = self.enemy_in_range(unit, elephants)
-                    else :
-                        knights = [e for e in enemy_units if isinstance(e, Knight)]
-                        target = self.enemy_in_range(unit, knights)
+                    #elephants = [e for e in enemy_units if isinstance(e, Elephant)]
+                    #if elephants :
+                    #    target = self.enemy_in_range(unit, elephants)
+                    #else :
+                    knights = [e for e in enemy_units if isinstance(e, Knight)]
+                    target = self.enemy_in_range(unit, knights)
                 elif isinstance(unit, Knight):
-                        my_cross = [e for e in self.army.living_units() if isinstance(e, Crossbowman)]
-                        if self.enemy_in_range(unit, my_cross, 5):
-                            crossbowmans = [e for e in enemy_units if isinstance(e, Crossbowman)]
-                            target = self.enemy_in_range(unit, crossbowmans)
-                        else:
-                            target = self.enemy_in_range(unit, enemy_units)
+                        #my_cross = [e for e in self.army.living_units() if isinstance(e, Crossbowman)]
+                        #if self.enemy_in_range(unit, my_cross, 5):
+                        #    crossbowmans = [e for e in enemy_units if isinstance(e, Crossbowman)]
+                        #    target = self.enemy_in_range(unit, crossbowmans)
+                        #else:
+                        target = self.enemy_in_range(unit, enemy_units)
+                        if isinstance(unit.last_attacker, Pikeman) :
+                                crossbowmans = [e for e in enemy_units if isinstance(e, Crossbowman)]
+                                target = self.enemy_in_range(unit, crossbowmans)
+                elif isinstance(unit,Elephant) :
+                     my_cross = [e for e in self.army.living_units() if isinstance(e, Crossbowman)]
+                     if self.enemy_in_range(unit, my_cross, 3):
+                        crossbowmans = [e for e in enemy_units if isinstance(e, Crossbowman)]
+                        target = self.enemy_in_range(unit, crossbowmans)
+                     else:
+                        target = self.enemy_in_range(unit, enemy_units)
 
                 if target is not None:
                     targets.append((unit, target))
@@ -75,9 +87,12 @@ class ColonelArchBtw(General) :
 
 
                 elif unit.cooldown > 0 : #partie heal
+                    target = None
                     allies = [a for a in self.army.living_units() if a.hp < a.max_hp- unit.attack  and a != unit]
                     if allies:
-                        target = min(allies, key=lambda allie: self.__distance_sq(unit, allie))
+                        monks = [m for m in allies if isinstance(m, Monk)]
+                        if monks : target = self.enemy_in_range(unit, monks,9)
+                        if not target : target = self.enemy_in_range(unit, allies)
                 else : #partie conversion
                     monks = [e for e in enemy_units if isinstance(e, Monk)]
                     if monks:
@@ -92,7 +107,7 @@ class ColonelArchBtw(General) :
 
                 if target and isinstance(target, Unit) :
                     targets.append((unit, target))
-
+            deja_pris.add(target)
         return targets
 
     def enemy_in_range(self,unit, enemy_units, range=0):

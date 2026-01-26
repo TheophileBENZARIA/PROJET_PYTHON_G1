@@ -18,7 +18,7 @@ class PyScreen(Affichage):
         # Initialisation de Pygame
         pygame.init()
         # Création de la fenêtre
-        self.WIDTH, self.HEIGHT = 1920, 1080
+        self.WIDTH, self.HEIGHT = 1280, 720
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         pygame.display.set_caption("Affichage d'une tile")
         # Chargement de l'image
@@ -471,7 +471,7 @@ class PyScreen(Affichage):
             army1_units = army1.living_units()
             army1_count = len(army1_units)
 
-            header1 = self.font.render(f"Army 1 (Blue): {army1_count} units", True, (50, 100, 255))
+            header1 = self.font.render(f"Army 1 ({type(army1.general).__name__}): {army1_count} units", True, (50, 100, 255))
             self.screen.blit(header1, (panel_x + 5, current_y))
             current_y += line_height
 
@@ -509,7 +509,7 @@ class PyScreen(Affichage):
             army2_units = army2.living_units()
             army2_count = len(army2_units)
 
-            header2 = self.font.render(f"Army 2 (Red): {army2_count} units", True, (255, 50, 50))
+            header2 = self.font.render(f"Army 2 ({type(army2.general).__name__}): {army2_count} units", True, (255, 50, 50))
             self.screen.blit(header2, (panel_x + 5, current_y))
             current_y += line_height
 

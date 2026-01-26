@@ -188,12 +188,13 @@ class PyScreen(Affichage):
         rect = unit_image.get_rect(center=(iso_x, iso_y))
         self.screen.blit(unit_image, rect.topleft)
 
-        # Draw colored border circle to identify army
-        border_radius = unit_size // 2 + 3
-        pygame.draw.circle(self.screen, army_color, (int(iso_x), int(iso_y)), border_radius, 2)
+        if army_color is not None:
+            # Draw colored border circle to identify army
+            border_radius = unit_size // 2 + 3
+            pygame.draw.circle(self.screen, army_color, (int(iso_x), int(iso_y)), border_radius, 2)
 
-        # Draw HP bar above unit
-        self._draw_hp_bar(unit, iso_x, iso_y, unit_size)
+            # Draw HP bar above unit
+            self._draw_hp_bar(unit, iso_x, iso_y, unit_size)
 
     def afficher(self, map: Map, army1: Army, army2: Army):
         # Handle input for camera movement and zoom

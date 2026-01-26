@@ -6,6 +6,7 @@ import pygame
 
 from backend.Class.Army import Army
 from backend.Class.Map import Map
+from backend.Class.Obstacles.Rocher import Rocher
 from backend.Class.Units.Castle import Castle
 from backend.Class.Units.Crossbowman import Crossbowman
 from backend.Class.Units.Elephant import Elephant
@@ -181,6 +182,8 @@ class PyScreen(Affichage):
             IMAGE = self.CASTLE_IMAGE
         elif isinstance(unit, Elephant):
             IMAGE = self.ELEPHANT_IMAGE
+        elif isinstance(unit, Rocher):
+            IMAGE = self.ROCHER_IMAGE
 
         # Make units bigger by multiplying with unit_scale_multiplier
         unit_size = int(unit.size * self.zoom_factor * self.unit_scale_multiplier)
@@ -231,6 +234,9 @@ class PyScreen(Affichage):
         # Draw army2 units with red border/indicator
         for unit in army2.living_units():
             self._draw_unit(unit, (255, 50, 50))  # Red for army2
+
+        for unit in map.obstacles:
+            self._draw_unit(unit, None)
 
         # Draw minimap if enabled
         if self.show_minimap:

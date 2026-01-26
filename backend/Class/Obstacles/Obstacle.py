@@ -1,8 +1,12 @@
+import uuid
+
+
 class Obstacle :
 
     def __init__(self, positition : tuple[float],size : float):
         self._size = size
         self._position = positition
+        self.id = str(uuid.uuid4())
 
         self.map = None
 

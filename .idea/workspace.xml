@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="05f174c4-e899-47eb-80aa-d0409c423455" name="Changes" comment="fin d'afficher grille">
-      <change beforePath="$PROJECT_DIR$/frontend/Graphics/PyScreen.py" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/Graphics/PyScreen.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/Class/Obstacles/Obstacle.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/Class/Obstacles/Obstacle.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
